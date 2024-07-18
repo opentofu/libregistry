@@ -1,4 +1,4 @@
-package registry
+package libregistry
 
 import (
 	"context"
@@ -58,6 +58,6 @@ func getModuleRepo(module module.Addr) vcs.RepositoryAddr {
 		OrganizationAddr: vcs.OrganizationAddr{
 			Org: module.Namespace,
 		},
-		Name: "terraform-" + module.Name + "-" + module.TargetSystem,
+		Name: "terraform-" + module.TargetSystem + "-" + module.Name,
 	}
 }

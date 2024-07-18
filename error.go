@@ -1,4 +1,4 @@
-package registry
+package libregistry
 
 import (
 	"github.com/opentofu/libregistry/types/module"

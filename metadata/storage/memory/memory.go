@@ -58,7 +58,7 @@ func (a *api) resolveDirectory(directory storage.Path) (*directory, error) {
 		for _, part := range parts {
 			subdir, ok := current.directories[part]
 			if !ok {
-				return nil, storage.ErrFileNotFound{
+				return nil, &storage.ErrFileNotFound{
 					Path: directory,
 				}
 			}
@@ -93,6 +93,10 @@ func (a *api) ListDirectories(_ context.Context, directory storage.Path) ([]stri
 
 	current, err := a.resolveDirectory(directory)
 	if err != nil {
+		var notFound *storage.ErrFileNotFound
+		if errors.As(err, &notFound) {
+			return nil, nil
+		}
 		return nil, err
 	}
 	result := make([]string, len(current.directories))
@@ -132,7 +136,7 @@ func (a *api) GetFile(_ context.Context, filePath storage.Path) ([]byte, error) 
 	}
 	contents, ok := current.files[filePath.Filename()]
 	if !ok {
-		return nil, storage.ErrFileNotFound{
+		return nil, &storage.ErrFileNotFound{
 			Path: filePath,
 		}
 	}
@@ -146,8 +150,8 @@ func (a *api) DeleteFile(_ context.Context, filePath storage.Path) error {
 
 	current, err := a.resolveDirectory(filePath.Basename())
 	if err != nil {
-		var e storage.ErrFileNotFound
-		if errors.Is(err, &e) {
+		var e *storage.ErrFileNotFound
+		if errors.As(err, &e) {
 			return nil
 		}
 		return err

@@ -4,7 +4,7 @@ import (
 	"regexp"
 )
 
-var nameRe = regexp.MustCompile(`^[a-zA-Z0-9_\-]$`)
+var nameRe = regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 
 // OrganizationAddr refers to an organization within a VCS system.
 type OrganizationAddr struct {
