@@ -1,4 +1,4 @@
-package fake
+package fakevcs
 
 type version struct {
 	name   string

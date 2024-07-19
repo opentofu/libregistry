@@ -1,4 +1,4 @@
-package fake
+package fakevcs
 
 import (
 	"github.com/opentofu/libregistry/vcs"
@@ -8,7 +8,7 @@ import (
 func New() VCSClient {
 	return &inMemoryVCS{
 		users:         map[string]struct{}{},
-		organizations: map[vcs.OrganizationAddr]org{},
+		organizations: map[vcs.OrganizationAddr]*org{},
 	}
 }
 

@@ -1,4 +1,4 @@
-package fake
+package fakevcs
 
 import (
 	"context"
@@ -31,7 +31,10 @@ func (i *inMemoryVCS) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error
 
 func (i *inMemoryVCS) ListLatestVersions(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]string, error) {
 	versions, err := i.ListAllVersions(ctx, repositoryAddr)
-	return versions[:5], err
+	if len(versions) > 5 {
+		versions = versions[:5]
+	}
+	return versions, err
 }
 
 func (i *inMemoryVCS) ListAllVersions(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]string, error) {
@@ -127,7 +130,10 @@ func (i *inMemoryVCS) CreateOrganization(organization vcs.OrganizationAddr) erro
 	if _, ok := i.organizations[organization]; ok {
 		return &OrganizationAlreadyExistsError{organization}
 	}
-	i.organizations[organization] = &org{}
+	i.organizations[organization] = &org{
+		users:        map[string]struct{}{},
+		repositories: map[vcs.RepositoryAddr]*repository{},
+	}
 	return nil
 }
 

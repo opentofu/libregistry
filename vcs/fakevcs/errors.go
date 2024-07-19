@@ -1,4 +1,4 @@
-package fake
+package fakevcs
 
 import (
 	"github.com/opentofu/libregistry/vcs"
