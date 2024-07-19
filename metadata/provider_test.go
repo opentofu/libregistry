@@ -52,7 +52,7 @@ func TestProviderCRUD(t *testing.T) {
 
 	checkEmpty := func(t *testing.T) {
 		for _, ns := range []string{testAliasedNamespace, testNamespace} {
-			providerList, err := api.ListProviders(ctx)
+			providerList, err := api.ListProviders(ctx, false)
 			if err != nil {
 				t.Fatalf("Failed to list providers: %v", err)
 			}
@@ -60,7 +60,7 @@ func TestProviderCRUD(t *testing.T) {
 				t.Fatalf("The provider list is not empty.")
 			}
 
-			providerList, err = api.ListProvidersByNamespace(ctx, ns)
+			providerList, err = api.ListProvidersByNamespace(ctx, ns, false)
 			if err != nil {
 				t.Fatalf("Failed to list providers: %v", err)
 			}
@@ -103,7 +103,7 @@ func TestProviderCRUD(t *testing.T) {
 		}
 	})
 	t.Run("3-list-get", func(t *testing.T) {
-		providers, err := api.ListProviders(ctx)
+		providers, err := api.ListProviders(ctx, false)
 		if err != nil {
 			t.Fatalf("Failed to list providers (%v)", err)
 		}
@@ -114,7 +114,7 @@ func TestProviderCRUD(t *testing.T) {
 			t.Fatalf("Incorrect provider addr in the registry (%s instead of %s)", providers[0].String(), canonicalAddr.String())
 		}
 
-		providers, err = api.ListProvidersByNamespace(ctx, testNamespace)
+		providers, err = api.ListProvidersByNamespace(ctx, testNamespace, false)
 		if err != nil {
 			t.Fatalf("Failed to list providers (%v)", err)
 		}
@@ -145,6 +145,41 @@ func TestProviderCRUD(t *testing.T) {
 		var notFound *metadata.ProviderNotFoundError
 		if !errors.As(err, &notFound) {
 			t.Fatalf("Incorrect error type returned when querying a provider by its alias without resolveAlias (%T instead of %T)", err, notFound)
+		}
+
+		providers, err = api.ListProviders(ctx, true)
+		if err != nil {
+			t.Fatalf("Failed to list providers (%v)", err)
+		}
+		if len(providers) != 2 {
+			t.Fatalf("Incorrect number of providers in the registry (%d)", len(providers))
+		}
+		if !providers[0].Equals(canonicalAddr) && !providers[1].Equals(canonicalAddr) {
+			t.Fatalf("None of the returned addresses contained the canonical address.")
+		}
+		if !providers[0].Equals(aliasedAddr) && !providers[1].Equals(aliasedAddr) {
+			t.Fatalf("None of the returned addresses contained the aliased address.")
+		}
+
+		providers, err = api.ListProvidersByNamespace(ctx, testNamespace, false)
+		if err != nil {
+			t.Fatalf("Failed to list providers (%v)", err)
+		}
+		if len(providers) != 1 {
+			t.Fatalf("Incorrect number of providers in the registry (%d)", len(providers))
+		}
+		if !providers[0].Equals(canonicalAddr) {
+			t.Fatalf("Incorrect provider addr in the registry (%s instead of %s)", providers[0].String(), canonicalAddr.String())
+		}
+		providers, err = api.ListProvidersByNamespace(ctx, testAliasedNamespace, true)
+		if err != nil {
+			t.Fatalf("Failed to list providers (%v)", err)
+		}
+		if len(providers) != 1 {
+			t.Fatalf("Incorrect number of providers in the registry (%d)", len(providers))
+		}
+		if !providers[0].Equals(aliasedAddr) {
+			t.Fatalf("Incorrect provider addr in the registry (%s instead of %s)", providers[0].String(), aliasedAddr.String())
 		}
 
 		aliasedProviderMeta, err := api.GetProvider(ctx, aliasedAddr, true)

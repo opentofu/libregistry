@@ -16,10 +16,12 @@ type ProviderDataAPI interface {
 	// also be observed in the "from" namespace.
 	ListProviderNamespaceAliases(ctx context.Context) (map[string]string, error)
 
-	// ListProviders returns all providers in the registry.
-	ListProviders(ctx context.Context) ([]provider.Addr, error)
-	// ListProvidersByNamespace returns all providers in a given namespace, returning the addresses.
-	ListProvidersByNamespace(ctx context.Context, namespace string) ([]provider.Addr, error)
+	// ListProviders returns all providers in the registry. The includeAliases parameter lets you include aliased copies
+	// of providers.
+	ListProviders(ctx context.Context, includeAliases bool) ([]provider.Addr, error)
+	// ListProvidersByNamespace returns all providers in a given namespace, returning the addresses. The includeAliases
+	// parameter lets you include aliased copies of providers.
+	ListProvidersByNamespace(ctx context.Context, namespace string, includeAliases bool) ([]provider.Addr, error)
 
 	// GetProvider returns the metadata for a given provider address. The resolveAliases parameter lets you control
 	// if provider namespace aliases should be resolved or not.

@@ -13,14 +13,38 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (r registryDataAPI) ListProviders(ctx context.Context) ([]provider.Addr, error) {
+func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool) ([]provider.Addr, error) {
 	providerLetters, err := r.storageAPI.ListDirectories(ctx, providersDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list '%s' directory (%w)", providersDirectory, err)
 	}
+
+	if includeAliases {
+		// Make sure we have the aliases in our letter list.
+		providerLetterSet := map[string]struct{}{}
+		for _, letter := range providerLetters {
+			providerLetterSet[letter] = struct{}{}
+		}
+
+		aliases, err := r.ListProviderNamespaceAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for from := range aliases {
+			providerLetterSet[from[:1]] = struct{}{}
+		}
+
+		providerLetters = make([]string, len(providerLetterSet))
+		i := 0
+		for letter := range providerLetterSet {
+			providerLetters[i] = letter
+			i++
+		}
+	}
+
 	var results []provider.Addr
 	for _, letter := range providerLetters {
-		letterResults, e := r.listProvidersByNamespaceLetter(ctx, letter)
+		letterResults, e := r.listProvidersByNamespaceLetter(ctx, letter, includeAliases)
 		if e != nil {
 			return nil, e
 		}
@@ -29,15 +53,41 @@ func (r registryDataAPI) ListProviders(ctx context.Context) ([]provider.Addr, er
 	return results, nil
 }
 
-func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, letter string) ([]provider.Addr, error) {
+func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, letter string, includeAliases bool) ([]provider.Addr, error) {
 	p := path.Join(providersDirectory, letter)
 	namespaces, e := r.storageAPI.ListDirectories(ctx, storage.Path(p))
 	if e != nil {
 		return nil, fmt.Errorf("failed to list provider directory %s (%w)", p, e)
 	}
+
+	if includeAliases {
+		// Make sure we have the aliases in our letter list.
+		providerNamespaceSet := map[string]struct{}{}
+		for _, namespace := range namespaces {
+			providerNamespaceSet[namespace] = struct{}{}
+		}
+
+		aliases, err := r.ListProviderNamespaceAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for from := range aliases {
+			if from[:1] == letter {
+				providerNamespaceSet[from] = struct{}{}
+			}
+		}
+
+		namespaces = make([]string, len(providerNamespaceSet))
+		i := 0
+		for namespace := range providerNamespaceSet {
+			namespaces[i] = namespace
+			i++
+		}
+	}
+
 	var results []provider.Addr
 	for _, namespace := range namespaces {
-		namespaceResults, e2 := r.ListProvidersByNamespace(ctx, namespace)
+		namespaceResults, e2 := r.ListProvidersByNamespace(ctx, namespace, includeAliases)
 		if e2 != nil {
 			return nil, e2
 		}
@@ -46,7 +96,7 @@ func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, let
 	return results, nil
 }
 
-func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace string) ([]provider.Addr, error) {
+func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace string, includeAliases bool) ([]provider.Addr, error) {
 	namespace = provider.NormalizeNamespace(namespace)
 
 	p := path.Join(providersDirectory, namespace[0:1], namespace)
@@ -55,13 +105,37 @@ func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace
 		return nil, fmt.Errorf("failed to list files in module name directory %s (%w)", p, err)
 	}
 	var result []provider.Addr
+	providerAddrSet := map[provider.Addr]struct{}{}
 	for _, file := range files {
 		if strings.HasSuffix(file, ".json") {
-			result = append(result, provider.Addr{
+			addr := provider.Addr{
 				Namespace: namespace,
 				Name:      strings.ToLower(strings.TrimSuffix(file, ".json")),
-			})
+			}
+			result = append(result, addr)
+			providerAddrSet[addr] = struct{}{}
 		}
 	}
+
+	if includeAliases {
+		aliases, err := r.ListProviderNamespaceAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+		if target, ok := aliases[namespace]; ok {
+			aliasedProviderAddrs, err := r.ListProvidersByNamespace(ctx, target, false)
+			if err != nil {
+				return nil, err
+			}
+			for _, addr := range aliasedProviderAddrs {
+				addr.Namespace = namespace
+				if _, present := providerAddrSet[addr]; !present {
+					result = append(result, addr)
+					providerAddrSet[addr] = struct{}{}
+				}
+			}
+		}
+	}
+
 	return result, nil
 }
