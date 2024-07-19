@@ -4,7 +4,7 @@ on:
   pull_request:
   push:
 jobs:
-  generate:
+  license:
     name: License
     runs-on: ubuntu-latest
     steps:
