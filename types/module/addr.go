@@ -5,7 +5,6 @@ package module
 
 import (
 	"fmt"
-	"strings"
 
 	regaddr "github.com/opentofu/registry-address"
 )
@@ -30,11 +29,7 @@ func (a Addr) Validate() error {
 }
 
 func (a Addr) Normalize() Addr {
-	return Addr{
-		Namespace:    strings.ToLower(a.Namespace),
-		Name:         strings.ToLower(a.Name),
-		TargetSystem: strings.ToLower(a.TargetSystem),
-	}
+	return NormalizeAddr(a)
 }
 
 func (a Addr) String() string {

@@ -5,6 +5,7 @@ package metadata_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/opentofu/libregistry/metadata"
@@ -58,6 +59,11 @@ func TestModuleCRUD(t *testing.T) {
 		})
 		if err == nil {
 			t.Fatalf("Fetching a non-existent module did not result in an error.")
+		}
+
+		var typedErr *metadata.ModuleNotFoundError
+		if !errors.As(err, &typedErr) {
+			t.Fatalf("Fetching a non-existent provider did not return the correct error type (%T instead of %T)", err, typedErr)
 		}
 	}
 	t.Run("1-list-get", checkEmpty)

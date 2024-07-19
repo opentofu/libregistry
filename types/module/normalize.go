@@ -15,10 +15,14 @@ func NormalizeName(name string) string {
 	return strings.ToLower(name)
 }
 
-func NormalizeModuleTargetSystem(name string) string {
+func NormalizeTargetSystem(name string) string {
 	return strings.ToLower(name)
 }
 
-func NormalizeModuleAddr(moduleAddr Addr) Addr {
-	return moduleAddr.Normalize()
+func NormalizeAddr(moduleAddr Addr) Addr {
+	return Addr{
+		Namespace:    NormalizeNamespace(moduleAddr.Namespace),
+		Name:         NormalizeName(moduleAddr.Name),
+		TargetSystem: NormalizeTargetSystem(moduleAddr.TargetSystem),
+	}
 }

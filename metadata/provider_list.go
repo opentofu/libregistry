@@ -47,7 +47,7 @@ func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, let
 }
 
 func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace string) ([]provider.Addr, error) {
-	namespace = r.normalizeProviderNamespace(namespace)
+	namespace = provider.NormalizeNamespace(namespace)
 
 	p := path.Join(providersDirectory, namespace[0:1], namespace)
 	files, err := r.storageAPI.ListFiles(ctx, storage.Path(p))

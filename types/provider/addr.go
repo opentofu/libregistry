@@ -9,3 +9,12 @@ type Addr struct {
 	Namespace string
 	Name      string
 }
+
+func (a Addr) Normalize() Addr {
+	return NormalizeAddr(a)
+}
+
+func (a Addr) String() string {
+	normalized := a.Normalize()
+	return normalized.Namespace + "/terraform-provider-" + normalized.Name
+}
