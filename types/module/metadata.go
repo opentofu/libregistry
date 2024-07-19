@@ -1,3 +1,6 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package module
 
 // Metadata represents all the metadata for a module. This includes the list of versions available for the module.

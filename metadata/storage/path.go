@@ -1,3 +1,6 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package storage
 
 import (
