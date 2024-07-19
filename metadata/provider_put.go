@@ -16,7 +16,7 @@ func (r registryDataAPI) PutProvider(ctx context.Context, providerAddr provider.
 	if err != nil {
 		return fmt.Errorf("failed to marshal module metadata (%w)", err)
 	}
-	path := r.getProviderPath(providerAddr)
+	path := r.getProviderPathRaw(providerAddr)
 	if err := r.storageAPI.PutFile(ctx, path, marshalled); err != nil {
 		return fmt.Errorf("failed to write module file %s (%w)", path, err)
 	}

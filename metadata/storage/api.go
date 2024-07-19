@@ -23,6 +23,8 @@ type API interface {
 	// or another error if there was a problem retrieving the file. The implementation must return files already
 	// created by PutFile but not yet commited.
 	GetFile(ctx context.Context, path Path) ([]byte, error)
+	// FileExists returns true if a certain file exists.
+	FileExists(ctx context.Context, path Path) (bool, error)
 	// DeleteFile removes the file from the backing storage on commit. If the file does not exist, it will not return
 	// an error.
 	DeleteFile(ctx context.Context, path Path) error

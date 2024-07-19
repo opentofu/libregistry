@@ -143,6 +143,23 @@ func (a *api) GetFile(_ context.Context, filePath storage.Path) ([]byte, error) 
 	return contents, nil
 }
 
+func (a *api) FileExists(_ context.Context, filePath storage.Path) (bool, error) {
+	if err := filePath.Validate(); err != nil {
+		return false, err
+	}
+
+	current, err := a.resolveDirectory(filePath.Basename())
+	if err != nil {
+		var notFound *storage.ErrFileNotFound
+		if errors.As(err, &notFound) {
+			return false, nil
+		}
+		return false, err
+	}
+	_, ok := current.files[filePath.Filename()]
+	return ok, nil
+}
+
 func (a *api) DeleteFile(_ context.Context, filePath storage.Path) error {
 	if err := filePath.Validate(); err != nil {
 		return err

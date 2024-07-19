@@ -10,5 +10,5 @@ import (
 )
 
 func (r registryDataAPI) DeleteProvider(ctx context.Context, providerAddr provider.Addr) error {
-	return r.storageAPI.DeleteFile(ctx, r.getProviderPath(providerAddr))
+	return r.storageAPI.DeleteFile(ctx, r.getProviderPathRaw(providerAddr))
 }

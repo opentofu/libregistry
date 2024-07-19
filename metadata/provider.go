@@ -12,23 +12,21 @@ import (
 // ProviderDataAPI lists the methods for handling providers and their keys.
 type ProviderDataAPI interface {
 	// ListProviderNamespaceAliases returns a list of source to target namespace aliases. The key is the "from"
-	// namespace, the value is the "to" namespace.
+	// namespace, the value is the "to" namespace. The alias means that all providers in the "to" namespace should
+	// also be observed in the "from" namespace.
 	ListProviderNamespaceAliases(ctx context.Context) (map[string]string, error)
-	// PutProviderNamespaceAlias queues up adding an alias. The "to" namespace will be used for storage.
-	// Any providers registered in the "from" namespace will be moved to the "to" namespace.
-	PutProviderNamespaceAlias(ctx context.Context, from string, to string) error
-	// DeleteProviderNamespaceAlias queues up deleting an alias from the specified "from" namespace.
-	DeleteProviderNamespaceAlias(ctx context.Context, from string) error
 
 	// ListProviders returns all providers in the registry.
 	ListProviders(ctx context.Context) ([]provider.Addr, error)
 	// ListProvidersByNamespace returns all providers in a given namespace, returning the addresses.
 	ListProvidersByNamespace(ctx context.Context, namespace string) ([]provider.Addr, error)
 
-	// GetProvider returns the metadata for a given provider address.
-	GetProvider(ctx context.Context, addr provider.Addr) (provider.Metadata, error)
+	// GetProvider returns the metadata for a given provider address. The resolveAliases parameter lets you control
+	// if provider namespace aliases should be resolved or not.
+	GetProvider(ctx context.Context, addr provider.Addr, resolveAliases bool) (provider.Metadata, error)
 	// GetProviderCanonicalAddr returns the canonical address of a provider, resolving any namespace aliases and
-	// lowercasing the name.
+	// lowercasing the name. This function may return a *ProviderNotFoundError if the provider was not found in
+	// its original or in the target namespace.
 	GetProviderCanonicalAddr(ctx context.Context, addr provider.Addr) (provider.Addr, error)
 
 	// PutProvider queues up writing the specified provider metadata.

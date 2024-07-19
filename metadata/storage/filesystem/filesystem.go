@@ -104,6 +104,22 @@ func (f *storageAPI) GetFile(_ context.Context, filePath storage.Path) ([]byte, 
 	return contents, nil
 }
 
+func (f *storageAPI) FileExists(_ context.Context, filePath storage.Path) (bool, error) {
+	if err := filePath.Validate(); err != nil {
+		return false, err
+	}
+
+	fullPath := path.Join(f.directory, string(filePath))
+	_, err := os.Stat(fullPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
 func (f *storageAPI) DeleteFile(_ context.Context, filePath storage.Path) error {
 	if err := filePath.Validate(); err != nil {
 		return err

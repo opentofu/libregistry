@@ -51,8 +51,24 @@ func TestStorageAPI(t *testing.T, factory func(t *testing.T) API) {
 			t.Fatalf("Incorrect file contents: %s (%v)", contents, err)
 		}
 
+		exists, err := fa.FileExists(ctx, testFile1)
+		if err != nil {
+			t.Fatalf("Failed to check test file existence %s (%v)", testFile1, err)
+		}
+		if !exists {
+			t.Fatalf("Test file %s incorrectly returned as non-existent", testFile1)
+		}
+
 		if err := fa.DeleteFile(ctx, testFile1); err != nil {
 			t.Fatalf("Failed to delete test file (%v)", err)
+		}
+
+		exists, err = fa.FileExists(ctx, testFile1)
+		if err != nil {
+			t.Fatalf("Failed to check test file existence %s (%v)", testFile1, err)
+		}
+		if exists {
+			t.Fatalf("Test file %s incorrectly returned as existent", testFile1)
 		}
 
 		if err := fa.DeleteFile(ctx, testFile1); err != nil {
@@ -116,10 +132,25 @@ func TestStorageAPI(t *testing.T, factory func(t *testing.T) API) {
 			t.Fatalf("Incorrect file contents: %s (%v)", contents, err)
 		}
 
+		exists, err := fa.FileExists(ctx, testFile2)
+		if err != nil {
+			t.Fatalf("Failed to check test file existence %s (%v)", testFile2, err)
+		}
+		if !exists {
+			t.Fatalf("Test file %s incorrectly returned as non-existent", testFile2)
+		}
+
 		if err := fa.DeleteFile(ctx, testFile2); err != nil {
 			t.Fatalf("Failed to delete test file (%v)", err)
 		}
 
+		exists, err = fa.FileExists(ctx, testFile2)
+		if err != nil {
+			t.Fatalf("Failed to check test file existence %s (%v)", testFile2, err)
+		}
+		if exists {
+			t.Fatalf("Test file %s incorrectly returned as existent", testFile2)
+		}
 		if err := fa.DeleteFile(ctx, testFile2); err != nil {
 			t.Fatalf("Failed to delete already-deleted file (%v)", err)
 		}
