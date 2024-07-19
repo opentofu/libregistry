@@ -19,34 +19,32 @@ import (
 func TestUpdateModuleBackfill(t *testing.T) {
 	const createVersionCount = 20
 
-	inMemoryVCS := fakevcs.New()
-	storage := memory.New()
-	ctx := context.Background()
 	moduleAddr := module.Addr{
 		Namespace:    "test",
 		Name:         "aws",
 		TargetSystem: "iam",
 	}
-
-	dataAPI, err := metadata.New(storage)
-	if err != nil {
-		panic(err)
-	}
-
-	registry, err := libregistry.New(
-		inMemoryVCS,
-		dataAPI,
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	org := vcs.OrganizationAddr{
 		Org: moduleAddr.Namespace,
 	}
 	repo := vcs.RepositoryAddr{
 		OrganizationAddr: org,
 		Name:             "terraform-" + moduleAddr.TargetSystem + "-" + moduleAddr.Name,
+	}
+
+	inMemoryVCS := fakevcs.New()
+	storage := memory.New()
+	ctx := context.Background()
+	dataAPI, err := metadata.New(storage)
+	if err != nil {
+		panic(err)
+	}
+	registry, err := libregistry.New(
+		inMemoryVCS,
+		dataAPI,
+	)
+	if err != nil {
+		t.Fatal(err)
 	}
 
 	if err := inMemoryVCS.CreateOrganization(org); err != nil {
