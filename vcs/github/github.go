@@ -161,7 +161,7 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 	panic("implement me")
 }
 
-func (g github) HasPermission(ctx context.Context, organization vcs.OrganizationAddr) (bool, error) {
+func (g github) HasPermission(ctx context.Context, username string, organization vcs.OrganizationAddr) (bool, error) {
 	//TODO implement me
 	panic("implement me")
 }

@@ -24,5 +24,5 @@ type Client interface {
 	DownloadAsset(ctx context.Context, repository RepositoryAddr, version string, asset string) ([]byte, error)
 
 	// HasPermission returns true if the user has permission to act on behalf of an organization.
-	HasPermission(ctx context.Context, organization OrganizationAddr) (bool, error)
+	HasPermission(ctx context.Context, username string, organization OrganizationAddr) (bool, error)
 }
