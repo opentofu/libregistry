@@ -62,6 +62,7 @@ func (r registryDataAPI) GetProviderCanonicalAddr(ctx context.Context, providerA
 			Namespace: targetNamespace,
 			Name:      providerAddr.Name,
 		}
+		providerPath = r.getProviderPathRaw(providerAddr)
 		exists, err = r.storageAPI.FileExists(ctx, providerPath)
 		if err != nil {
 			return providerAddr, err

@@ -11,3 +11,7 @@ type Target struct {
 	DownloadURL string `json:"download_url"` // The direct URL to download the provider binary.
 	SHASum      string `json:"shasum"`       // The SHA checksum of the provider binary.
 }
+
+func (t Target) Equals(other Target) bool {
+	return t.OS == other.OS && t.Arch == other.Arch && t.Filename == other.Filename && t.DownloadURL == other.DownloadURL && t.SHASum == other.SHASum
+}

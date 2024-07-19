@@ -18,3 +18,9 @@ func (a Addr) String() string {
 	normalized := a.Normalize()
 	return normalized.Namespace + "/terraform-provider-" + normalized.Name
 }
+
+func (a Addr) Equals(other Addr) bool {
+	normalizedA := a.Normalize()
+	normalizedOther := other.Normalize()
+	return normalizedA.Namespace == normalizedOther.Namespace && normalizedA.Name == normalizedOther.Name
+}

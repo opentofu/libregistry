@@ -42,8 +42,8 @@ func TestProviderCRUD(t *testing.T) {
 		},
 	}
 
-	fa := memory.New()
-	api, err := metadata.New(fa)
+	storage := memory.New()
+	api, err := metadata.New(storage)
 	if err != nil {
 		t.Fatalf("Failed to initialize API (%v)", err)
 	}
@@ -102,4 +102,66 @@ func TestProviderCRUD(t *testing.T) {
 			t.Fatalf("Failed to create provider version (%v)", err)
 		}
 	})
+	t.Run("3-list-get", func(t *testing.T) {
+		providers, err := api.ListProviders(ctx)
+		if err != nil {
+			t.Fatalf("Failed to list providers (%v)", err)
+		}
+		if len(providers) != 1 {
+			t.Fatalf("Incorrect number of providers in the registry (%d)", len(providers))
+		}
+		if !providers[0].Equals(canonicalAddr) {
+			t.Fatalf("Incorrect provider addr in the registry (%s instead of %s)", providers[0].String(), canonicalAddr.String())
+		}
+
+		providers, err = api.ListProvidersByNamespace(ctx, testNamespace)
+		if err != nil {
+			t.Fatalf("Failed to list providers (%v)", err)
+		}
+		if len(providers) != 1 {
+			t.Fatalf("Incorrect number of providers in the registry (%d)", len(providers))
+		}
+		if !providers[0].Equals(canonicalAddr) {
+			t.Fatalf("Incorrect provider addr in the registry (%s instead of %s)", providers[0].String(), canonicalAddr.String())
+		}
+
+		providerMeta, err := api.GetProvider(ctx, canonicalAddr, false)
+		if err != nil {
+			t.Fatalf("Failed to get provider (%v)", err)
+		}
+		if !providerMeta.Equals(provider.Metadata{
+			CustomRepository: "",
+			Versions: []provider.Version{
+				providerVersion,
+			},
+		}) {
+			t.Fatalf("Incorrect provider metadata returned.")
+		}
+
+		_, err = api.GetProvider(ctx, aliasedAddr, false)
+		if err == nil {
+			t.Fatalf("No error returned when querying a provider by its alias without resolveAlias.")
+		}
+		var notFound *metadata.ProviderNotFoundError
+		if !errors.As(err, &notFound) {
+			t.Fatalf("Incorrect error type returned when querying a provider by its alias without resolveAlias (%T instead of %T)", err, notFound)
+		}
+
+		aliasedProviderMeta, err := api.GetProvider(ctx, aliasedAddr, true)
+		if err != nil {
+			t.Fatalf("Failed to query the provider by its alias (%v)", err)
+		}
+		if !providerMeta.Equals(aliasedProviderMeta) {
+			t.Fatalf("Aliased provider meta lookup returned different metadata.")
+		}
+	})
+	t.Run("4-delete", func(t *testing.T) {
+		if err := api.DeleteProvider(ctx, canonicalAddr); err != nil {
+			t.Fatalf("Failed to delete provider (%v)", err)
+		}
+		if err := api.DeleteProvider(ctx, canonicalAddr); err != nil {
+			t.Fatalf("Deleting an already-deleted provider failed (%v)", err)
+		}
+	})
+	t.Run("5-list-get", checkEmpty)
 }

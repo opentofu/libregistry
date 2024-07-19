@@ -19,8 +19,8 @@ func TestModuleCRUD(t *testing.T) {
 	const testTargetSystem = "amd64"
 	const testVersion = "1.0.0"
 
-	fa := memory.New()
-	api, err := metadata.New(fa)
+	storage := memory.New()
+	api, err := metadata.New(storage)
 	if err != nil {
 		t.Fatalf("Failed to initialize API (%v)", err)
 	}

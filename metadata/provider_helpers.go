@@ -13,7 +13,7 @@ import (
 
 func (r registryDataAPI) getProviderPathRaw(providerAddr provider.Addr) storage.Path {
 	providerAddr = providerAddr.Normalize()
-	return storage.Path(path.Join(modulesDirectory, providerAddr.Namespace[0:1], providerAddr.Name) + ".json")
+	return storage.Path(path.Join(providersDirectory, providerAddr.Namespace[0:1], providerAddr.Namespace, providerAddr.Name) + ".json")
 }
 
 func (r registryDataAPI) getProviderPathCanonical(ctx context.Context, providerAddr provider.Addr) (storage.Path, error) {
