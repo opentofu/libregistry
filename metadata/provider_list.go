@@ -14,7 +14,7 @@ import (
 )
 
 func (r registryDataAPI) ListProviders(ctx context.Context) ([]provider.Addr, error) {
-	providerLetters, err := r.storageAPI.ListDirectories(nil, providersDirectory)
+	providerLetters, err := r.storageAPI.ListDirectories(ctx, providersDirectory)
 	if err != nil {
 		return nil, fmt.Errorf("failed to list '%s' directory (%w)", providersDirectory, err)
 	}
@@ -31,7 +31,7 @@ func (r registryDataAPI) ListProviders(ctx context.Context) ([]provider.Addr, er
 
 func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, letter string) ([]provider.Addr, error) {
 	p := path.Join(providersDirectory, letter)
-	namespaces, e := r.storageAPI.ListDirectories(nil, storage.Path(p))
+	namespaces, e := r.storageAPI.ListDirectories(ctx, storage.Path(p))
 	if e != nil {
 		return nil, fmt.Errorf("failed to list provider directory %s (%w)", p, e)
 	}
