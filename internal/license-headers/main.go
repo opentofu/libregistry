@@ -1,5 +1,5 @@
 // Copyright (c) The OpenTofu Authors
-// SPDX-License-Identifier: MPL-2.0
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
@@ -9,13 +9,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-
-	"github.com/opentofu/tofudl/branding"
 )
 
 func main() {
-	header := `// Copyright (c) ` + branding.SPDXAuthorsName + `
-// SPDX-License-Identifier: ` + branding.SPDXLicense + `
+	header := `// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: Apache-2.0
 
 `
 	checkOnly := false
