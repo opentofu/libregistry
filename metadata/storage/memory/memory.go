@@ -36,7 +36,7 @@ func (a *api) ListFiles(_ context.Context, directory storage.Path) ([]string, er
 	}
 	current, err := a.resolveDirectory(directory)
 	if err != nil {
-		var e storage.ErrFileNotFound
+		var e *storage.ErrFileNotFound
 		if errors.As(err, &e) {
 			return nil, nil
 		}

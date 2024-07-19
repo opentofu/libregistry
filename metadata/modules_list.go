@@ -37,7 +37,7 @@ func (r registryDataAPI) ListModules(ctx context.Context) ([]module.Addr, error)
 
 func (r registryDataAPI) listModulesByNamespaceLetter(ctx context.Context, letter string) ([]module.Addr, error) {
 	p := storage.Path(path.Join(modulesDirectory, letter))
-	namespaces, e := r.storageAPI.ListDirectories(nil, p)
+	namespaces, e := r.storageAPI.ListDirectories(ctx, p)
 	if e != nil {
 		// The letter directory does not exist:
 		var notFoundError storage.ErrFileNotFound
@@ -60,7 +60,7 @@ func (r registryDataAPI) listModulesByNamespaceLetter(ctx context.Context, lette
 func (r registryDataAPI) ListModulesByNamespace(ctx context.Context, namespace string) ([]module.Addr, error) {
 	namespace = module.NormalizeNamespace(namespace)
 	p := storage.Path(path.Join(modulesDirectory, namespace[0:1], namespace))
-	directories, err := r.storageAPI.ListDirectories(nil, p)
+	directories, err := r.storageAPI.ListDirectories(ctx, p)
 	if err != nil {
 		// The namespace directory does not exist:
 		var notFoundError storage.ErrFileNotFound
