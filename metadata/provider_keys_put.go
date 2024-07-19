@@ -15,6 +15,7 @@ import (
 )
 
 func (r registryDataAPI) PutProviderNamespaceKey(ctx context.Context, namespace string, key provider.Key) error {
+	namespace = provider.NormalizeNamespace(namespace)
 	basePath := path.Join(keysDirectory, namespace[0:1], namespace)
 	files, err := r.storageAPI.ListFiles(ctx, storage.Path(basePath))
 	if err != nil {

@@ -11,14 +11,15 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/metadata/storage"
+	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (r registryDataAPI) ListProviderNamespacesWithKeys(_ context.Context) ([]string, error) {
-	//TODO implement me
-	panic("implement me")
+func (r registryDataAPI) ListProviderNamespacesWithKeys(ctx context.Context) ([]string, error) {
+	panic("Implement me.")
 }
 
 func (r registryDataAPI) ListProviderNamespaceKeyIDs(ctx context.Context, namespace string) ([]string, error) {
+	namespace = provider.NormalizeNamespace(namespace)
 	basePath := path.Join(keysDirectory, namespace[0:1], namespace)
 	files, err := r.storageAPI.ListFiles(ctx, storage.Path(basePath))
 	if err != nil {

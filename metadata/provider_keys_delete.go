@@ -11,9 +11,11 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/metadata/storage"
+	"github.com/opentofu/libregistry/types/provider"
 )
 
 func (r registryDataAPI) DeleteProviderNamespaceKey(ctx context.Context, namespace string, keyID string) error {
+	namespace = provider.NormalizeNamespace(namespace)
 	basePath := path.Join(keysDirectory, namespace[0:1], namespace)
 	files, err := r.storageAPI.ListFiles(ctx, storage.Path(basePath))
 	if err != nil {
