@@ -41,10 +41,7 @@ func (m api) AddModule(ctx context.Context, repository string) error {
 
 	for _, p := range modules {
 		if p.Equals(submitted) {
-			return &ModuleAddFailedError{
-				submitted,
-				&ModuleAlreadyExistsError{submitted},
-			}
+			return &ModuleAlreadyExistsError{submitted}
 		}
 	}
 

@@ -10,7 +10,8 @@ import (
 
 // API describes the API interface for accessing the registry.
 type API interface {
-	// AddModule adds a module based on a VCS repository.
+	// AddModule adds a module based on a VCS repository. The VCS repository name must follow the naming convention
+	// of the VCS implementation passed to the registry API on initialization.
 	AddModule(ctx context.Context, vcsRepository string) error
 	// UpdateModule updates the list of available versions for a module in the registry from its source repository.
 	// This function is idempotent and adds the module to the storage if it does not exist yet.
