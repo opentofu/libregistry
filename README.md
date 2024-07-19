@@ -80,3 +80,11 @@ func main() {
 	}
 }
 ```
+
+## VCS implementations
+
+This library supports pluggable VCS systems. We run on GitHub by default, but you may be interested in implementing a VCS backend for a different system. Check out the [vcs](vcs) package for the VCS interface. Note, that the implementation still assumes that you will have an organization/repository structure and many systems, such as the registry UI, still assume that the VCS system will be git.
+
+## Metadata storage
+
+You may also be interested in storing the metadata somewhere else than the local filesystem. For this purpose, check out the [metadata/storage](metadata/storage) package, which contains the interface for defining storages.
