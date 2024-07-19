@@ -9,8 +9,13 @@ type Client interface {
 	// ParseRepositoryAddr parses the repository address from a string.
 	ParseRepositoryAddr(ref string) (RepositoryAddr, error)
 
-	// ListVersions returns all versions (e.g. tags) in the VCS system.
-	ListVersions(ctx context.Context, repository RepositoryAddr) ([]string, error)
+	// ListLatestVersions returns the last few versions (e.g. tags) in the VCS system. This is a lightweight call and
+	// may need to be supplemented by a call to ListAllVersions.
+	ListLatestVersions(ctx context.Context, repository RepositoryAddr) ([]string, error)
+
+	// ListAllVersions returns a list of all versions (e.g. tags) in the repository. Whenever possible, prefer
+	// ListLatestVersions instead since this call may be heavily rate limited.
+	ListAllVersions(ctx context.Context, repository RepositoryAddr) ([]string, error)
 
 	// ListAssets lists all binary assets for a version of a repository.
 	ListAssets(ctx context.Context, repository RepositoryAddr, version string) ([]string, error)

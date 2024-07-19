@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/opentofu/libregistry"
 	"github.com/opentofu/libregistry/metadata"
@@ -12,7 +13,7 @@ import (
 )
 
 func ExampleAPI_AddModule() {
-	ghClient, err := github.New("", nil)
+	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil)
 	if err != nil {
 		panic(err)
 	}

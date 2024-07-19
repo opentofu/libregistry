@@ -15,3 +15,15 @@ func (r InvalidRepositoryAddrError) Error() string {
 func (r InvalidRepositoryAddrError) Unwrap() error {
 	return r.Cause
 }
+
+type RequestFailedError struct {
+	Cause error
+}
+
+func (r RequestFailedError) Error() string {
+	return "VCS request failed: " + r.Cause.Error()
+}
+
+func (r RequestFailedError) Unwrap() error {
+	return r.Cause
+}

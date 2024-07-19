@@ -29,9 +29,10 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 		moduleMetadata = module.Metadata{}
 	}
 
-	tags, err := m.vcsClient.ListVersions(ctx, getModuleRepo(moduleAddr))
+	previousSize := len(moduleMetadata.Versions)
+	tags, err := m.vcsClient.ListLatestVersions(ctx, getModuleRepo(moduleAddr))
 	if err != nil {
-		return &ModuleAddFailedError{
+		return &ModuleUpdateFailedError{
 			moduleAddr,
 			err,
 		}
@@ -43,6 +44,24 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 		})
 	}
 	moduleMetadata.Versions = moduleMetadata.Versions.Merge(newVersions)
+
+	if len(moduleMetadata.Versions) == previousSize+len(tags) {
+		// No overlap found, do the full query:
+		tags, err = m.vcsClient.ListAllVersions(ctx, getModuleRepo(moduleAddr))
+		if err != nil {
+			return &ModuleUpdateFailedError{
+				moduleAddr,
+				err,
+			}
+		}
+		newVersions = nil
+		for _, tag := range tags {
+			newVersions = append(newVersions, module.Version{
+				Version: module.VersionNumber(tag),
+			})
+		}
+		moduleMetadata.Versions = newVersions
+	}
 
 	if err := m.dataAPI.PutModule(ctx, moduleAddr, moduleMetadata); err != nil {
 		return &ModuleAddFailedError{
