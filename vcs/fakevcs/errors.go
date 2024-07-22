@@ -25,35 +25,35 @@ func (r RepositoryAlreadyExistsError) Error() string {
 
 type VersionAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        string
+	Version        vcs.Version
 }
 
 func (v VersionAlreadyExistsError) Error() string {
-	return "Version " + v.Version + " already exists in repository " + v.RepositoryAddr.String()
+	return "Version " + string(v.Version) + " already exists in repository " + v.RepositoryAddr.String()
 }
 
 type AssetAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        string
-	Asset          string
+	Version        vcs.Version
+	Asset          vcs.AssetName
 }
 
 func (a AssetAlreadyExistsError) Error() string {
-	return "Asset + " + a.Asset + " already exists for version " + a.Version + " on repository " + a.RepositoryAddr.String()
+	return "Asset + " + string(a.Asset) + " already exists for version " + string(a.Version) + " on repository " + a.RepositoryAddr.String()
 }
 
 type UserAlreadyExistsError struct {
-	Username string
+	Username vcs.Username
 }
 
 func (u UserAlreadyExistsError) Error() string {
-	return "User " + u.Username + " already exists."
+	return "User " + string(u.Username) + " already exists."
 }
 
 type UserNotFoundError struct {
-	Username string
+	Username vcs.Username
 }
 
 func (u UserNotFoundError) Error() string {
-	return "User " + u.Username + " not found."
+	return "User " + string(u.Username) + " not found."
 }

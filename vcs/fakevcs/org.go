@@ -8,6 +8,6 @@ import (
 )
 
 type org struct {
-	users        map[string]struct{}
+	users        map[vcs.Username]struct{}
 	repositories map[vcs.RepositoryAddr]*repository
 }

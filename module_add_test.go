@@ -20,7 +20,7 @@ import (
 )
 
 func ExampleAPI_AddModule() {
-	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil)
+	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil, nil)
 	if err != nil {
 		panic(err)
 	}
@@ -84,12 +84,10 @@ func TestAddModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	org := vcs.OrganizationAddr{
-		Org: moduleAddr.Namespace,
-	}
+	org := vcs.OrganizationAddr(moduleAddr.Namespace)
 	repo := vcs.RepositoryAddr{
-		OrganizationAddr: org,
-		Name:             "terraform-" + moduleAddr.TargetSystem + "-" + moduleAddr.Name,
+		Org:  org,
+		Name: "terraform-" + moduleAddr.TargetSystem + "-" + moduleAddr.Name,
 	}
 
 	if err := inMemoryVCS.CreateOrganization(org); err != nil {

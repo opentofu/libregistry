@@ -33,7 +33,7 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 	}
 
 	previousSize := len(moduleMetadata.Versions)
-	tags, err := m.vcsClient.ListLatestVersions(ctx, getModuleRepo(moduleAddr))
+	tags, err := m.vcsClient.ListLatestTags(ctx, getModuleRepo(moduleAddr))
 	if err != nil {
 		return &ModuleUpdateFailedError{
 			moduleAddr,
@@ -50,7 +50,7 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 
 	if len(moduleMetadata.Versions) == previousSize+len(tags) {
 		// No overlap found, do the full query:
-		tags, err = m.vcsClient.ListAllVersions(ctx, getModuleRepo(moduleAddr))
+		tags, err = m.vcsClient.ListAllTags(ctx, getModuleRepo(moduleAddr))
 		if err != nil {
 			return &ModuleUpdateFailedError{
 				moduleAddr,
@@ -77,9 +77,7 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 
 func getModuleRepo(module module.Addr) vcs.RepositoryAddr {
 	return vcs.RepositoryAddr{
-		OrganizationAddr: vcs.OrganizationAddr{
-			Org: module.Namespace,
-		},
+		Org:  vcs.OrganizationAddr(module.Namespace),
 		Name: "terraform-" + module.TargetSystem + "-" + module.Name,
 	}
 }

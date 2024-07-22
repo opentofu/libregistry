@@ -10,7 +10,7 @@ import (
 // New creates a fake, in-memory VCSClient implementation for testing use.
 func New() VCSClient {
 	return &inMemoryVCS{
-		users:         map[string]struct{}{},
+		users:         map[vcs.Username]struct{}{},
 		organizations: map[vcs.OrganizationAddr]*org{},
 	}
 }
@@ -20,8 +20,8 @@ type VCSClient interface {
 
 	CreateOrganization(organization vcs.OrganizationAddr) error
 	CreateRepository(repository vcs.RepositoryAddr) error
-	CreateVersion(repository vcs.RepositoryAddr, version string) error
-	AddAsset(repository vcs.RepositoryAddr, version string, name string, data []byte) error
-	AddUser(username string) error
-	AddMember(organization vcs.OrganizationAddr, username string) error
+	CreateVersion(repository vcs.RepositoryAddr, version vcs.Version) error
+	AddAsset(repository vcs.RepositoryAddr, version vcs.Version, name vcs.AssetName, data []byte) error
+	AddUser(username vcs.Username) error
+	AddMember(organization vcs.OrganizationAddr, username vcs.Username) error
 }

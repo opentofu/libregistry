@@ -11,37 +11,46 @@ import (
 )
 
 type inMemoryVCS struct {
-	users         map[string]struct{}
+	users         map[vcs.Username]struct{}
 	organizations map[vcs.OrganizationAddr]*org
+}
+
+func (i *inMemoryVCS) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
+	return i.ListLatestTags(ctx, repository)
+}
+
+func (i *inMemoryVCS) ListAllReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
+	return i.ListAllTags(ctx, repository)
 }
 
 func (i *inMemoryVCS) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
 	parts := strings.SplitN(ref, "/", 2)
 	if len(parts) != 2 {
 		return vcs.RepositoryAddr{}, &vcs.InvalidRepositoryAddrError{
-			RepositoryAddr: ref,
-			Cause:          nil,
+			RepositoryString: ref,
 		}
 	}
 	addr := vcs.RepositoryAddr{
-		OrganizationAddr: vcs.OrganizationAddr{
-			Org: parts[0],
-		},
+		Org:  vcs.OrganizationAddr(parts[0]),
 		Name: parts[1],
 	}
 	return addr, addr.Validate()
 }
 
-func (i *inMemoryVCS) ListLatestVersions(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]string, error) {
-	versions, err := i.ListAllVersions(ctx, repositoryAddr)
+func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
+	versions, err := i.ListAllTags(ctx, repositoryAddr)
 	if len(versions) > 5 {
 		versions = versions[:5]
 	}
 	return versions, err
 }
 
-func (i *inMemoryVCS) ListAllVersions(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]string, error) {
-	org, ok := i.organizations[repositoryAddr.OrganizationAddr]
+func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return nil, err
+	}
+
+	org, ok := i.organizations[repositoryAddr.Org]
 	if !ok {
 		return nil, &vcs.RepositoryNotFoundError{
 			RepositoryAddr: repositoryAddr,
@@ -54,15 +63,21 @@ func (i *inMemoryVCS) ListAllVersions(_ context.Context, repositoryAddr vcs.Repo
 		}
 	}
 
-	result := make([]string, len(repo.versions))
+	result := make([]vcs.Version, len(repo.versions))
 	for i, ver := range repo.versions {
 		result[i] = ver.name
 	}
 	return result, nil
 }
 
-func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.RepositoryAddr, version string) ([]string, error) {
-	org, ok := i.organizations[repositoryAddr.OrganizationAddr]
+func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version) ([]vcs.AssetName, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return nil, err
+	}
+	if err := version.Validate(); err != nil {
+		return nil, err
+	}
+	org, ok := i.organizations[repositoryAddr.Org]
 	if !ok {
 		return nil, &vcs.RepositoryNotFoundError{
 			RepositoryAddr: repositoryAddr,
@@ -76,7 +91,7 @@ func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.Repositor
 	}
 	for _, ver := range repo.versions {
 		if ver.name == version {
-			result := make([]string, len(ver.assets))
+			result := make([]vcs.AssetName, len(ver.assets))
 			i := 0
 			for name := range ver.assets {
 				result[i] = name
@@ -91,8 +106,17 @@ func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.Repositor
 	}
 }
 
-func (i *inMemoryVCS) DownloadAsset(_ context.Context, repositoryAddr vcs.RepositoryAddr, version string, asset string) ([]byte, error) {
-	org, ok := i.organizations[repositoryAddr.OrganizationAddr]
+func (i *inMemoryVCS) DownloadAsset(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version, asset vcs.AssetName) ([]byte, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return nil, err
+	}
+	if err := version.Validate(); err != nil {
+		return nil, err
+	}
+	if err := asset.Validate(); err != nil {
+		return nil, err
+	}
+	org, ok := i.organizations[repositoryAddr.Org]
 	if !ok {
 		return nil, &vcs.RepositoryNotFoundError{
 			RepositoryAddr: repositoryAddr,
@@ -118,7 +142,13 @@ func (i *inMemoryVCS) DownloadAsset(_ context.Context, repositoryAddr vcs.Reposi
 	}
 }
 
-func (i *inMemoryVCS) HasPermission(_ context.Context, username string, organization vcs.OrganizationAddr) (bool, error) {
+func (i *inMemoryVCS) HasPermission(_ context.Context, username vcs.Username, organization vcs.OrganizationAddr) (bool, error) {
+	if err := organization.Validate(); err != nil {
+		return false, err
+	}
+	if err := username.Validate(); err != nil {
+		return false, err
+	}
 	org, ok := i.organizations[organization]
 	if !ok {
 		return false, &vcs.OrganizationNotFoundError{
@@ -130,33 +160,45 @@ func (i *inMemoryVCS) HasPermission(_ context.Context, username string, organiza
 }
 
 func (i *inMemoryVCS) CreateOrganization(organization vcs.OrganizationAddr) error {
+	if err := organization.Validate(); err != nil {
+		return err
+	}
 	if _, ok := i.organizations[organization]; ok {
 		return &OrganizationAlreadyExistsError{organization}
 	}
 	i.organizations[organization] = &org{
-		users:        map[string]struct{}{},
+		users:        map[vcs.Username]struct{}{},
 		repositories: map[vcs.RepositoryAddr]*repository{},
 	}
 	return nil
 }
 
 func (i *inMemoryVCS) CreateRepository(repositoryAddr vcs.RepositoryAddr) error {
-	if _, ok := i.organizations[repositoryAddr.OrganizationAddr]; !ok {
+	if err := repositoryAddr.Validate(); err != nil {
+		return err
+	}
+	if _, ok := i.organizations[repositoryAddr.Org]; !ok {
 		return &vcs.OrganizationNotFoundError{
-			OrganizationAddr: repositoryAddr.OrganizationAddr,
+			OrganizationAddr: repositoryAddr.Org,
 		}
 	}
-	if _, ok := i.organizations[repositoryAddr.OrganizationAddr].repositories[repositoryAddr]; ok {
+	if _, ok := i.organizations[repositoryAddr.Org].repositories[repositoryAddr]; ok {
 		return &RepositoryAlreadyExistsError{
 			repositoryAddr,
 		}
 	}
-	i.organizations[repositoryAddr.OrganizationAddr].repositories[repositoryAddr] = &repository{}
+	i.organizations[repositoryAddr.Org].repositories[repositoryAddr] = &repository{}
 	return nil
 }
 
-func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName string) error {
-	org, ok := i.organizations[repositoryAddr.OrganizationAddr]
+func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version) error {
+	if err := repositoryAddr.Validate(); err != nil {
+		return err
+	}
+	if err := versionName.Validate(); err != nil {
+		return err
+	}
+	org, ok := i.organizations[repositoryAddr.Org]
 	if !ok {
 		return &vcs.RepositoryNotFoundError{
 			RepositoryAddr: repositoryAddr,
@@ -179,14 +221,23 @@ func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionNa
 	repo.versions = append([]version{
 		{
 			name:   versionName,
-			assets: map[string][]byte{},
+			assets: map[vcs.AssetName][]byte{},
 		},
 	}, repo.versions...)
 	return nil
 }
 
-func (i *inMemoryVCS) AddAsset(repositoryAddr vcs.RepositoryAddr, versionName string, assetName string, assetData []byte) error {
-	org, ok := i.organizations[repositoryAddr.OrganizationAddr]
+func (i *inMemoryVCS) AddAsset(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version, assetName vcs.AssetName, assetData []byte) error {
+	if err := repositoryAddr.Validate(); err != nil {
+		return err
+	}
+	if err := versionName.Validate(); err != nil {
+		return err
+	}
+	if err := assetName.Validate(); err != nil {
+		return err
+	}
+	org, ok := i.organizations[repositoryAddr.Org]
 	if !ok {
 		return &vcs.RepositoryNotFoundError{
 			RepositoryAddr: repositoryAddr,
@@ -219,7 +270,7 @@ func (i *inMemoryVCS) AddAsset(repositoryAddr vcs.RepositoryAddr, versionName st
 	}
 }
 
-func (i *inMemoryVCS) AddUser(username string) error {
+func (i *inMemoryVCS) AddUser(username vcs.Username) error {
 	if _, ok := i.users[username]; ok {
 		return &UserAlreadyExistsError{
 			username,
@@ -229,7 +280,7 @@ func (i *inMemoryVCS) AddUser(username string) error {
 	return nil
 }
 
-func (i *inMemoryVCS) AddMember(organizationAddr vcs.OrganizationAddr, username string) error {
+func (i *inMemoryVCS) AddMember(organizationAddr vcs.OrganizationAddr, username vcs.Username) error {
 	if _, ok := i.users[username]; !ok {
 		return &UserNotFoundError{
 			username,

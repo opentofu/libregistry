@@ -46,38 +46,39 @@ You can use the registry API like this:
 package main
 
 import (
-    "context"
+	"context"
+	"os"
 
-    "github.com/opentofu/libregistry"
-    "github.com/opentofu/libregistry/metadata"
-    "github.com/opentofu/libregistry/metadata/storage/filesystem"
-    "github.com/opentofu/libregistry/vcs/github"
+	"github.com/opentofu/libregistry"
+	"github.com/opentofu/libregistry/metadata"
+	"github.com/opentofu/libregistry/metadata/storage/filesystem"
+	"github.com/opentofu/libregistry/vcs/github"
 )
 
 func main() {
-    ghClient, err := github.New("", nil)
-    if err != nil {
-        panic(err)
-    }
+	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil, nil)
+	if err != nil {
+		panic(err)
+	}
 
-    storage := filesystem.New("path/to/registry/data")
+	storage := filesystem.New("path/to/registry/data")
 
-    metadataAPI, err := metadata.New(storage)
-    if err != nil {
-        panic(err)
-    }
+	metadataAPI, err := metadata.New(storage)
+	if err != nil {
+		panic(err)
+	}
 
-    registry, err := libregistry.New(
-        ghClient,
-        metadataAPI,
-    )
-    if err != nil {
-        panic(err)
-    }
+	registry, err := libregistry.New(
+		ghClient,
+		metadataAPI,
+	)
+	if err != nil {
+		panic(err)
+	}
 
-    if err := registry.AddModule(context.TODO(), "terraform-aws-modules/terraform-aws-iam"); err != nil {
-        panic(err)
-    }
+	if err := registry.AddModule(context.TODO(), "terraform-aws-modules/terraform-aws-iam"); err != nil {
+		panic(err)
+	}
 }
 ```
 

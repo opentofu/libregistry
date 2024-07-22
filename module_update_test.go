@@ -16,9 +16,9 @@ import (
 	"github.com/opentofu/libregistry/vcs/fakevcs"
 )
 
-// TestUpdateModuleBackfill tests that the process correctly backfills using the expensive ListAllVersions call when
-// it detects that there was no overlap between the existing versions and the versions returned by ListLatestVersions.
-// This test relies on the fact that the fakevcs returns 5 versions in the ListLatestVersions call.
+// TestUpdateModuleBackfill tests that the process correctly backfills using the expensive ListAllTags call when
+// it detects that there was no overlap between the existing versions and the versions returned by ListLatestTags.
+// This test relies on the fact that the fakevcs returns 5 versions in the ListLatestTags call.
 func TestUpdateModuleBackfill(t *testing.T) {
 	const createVersionCount = 20
 
@@ -27,12 +27,10 @@ func TestUpdateModuleBackfill(t *testing.T) {
 		Name:         "aws",
 		TargetSystem: "iam",
 	}
-	org := vcs.OrganizationAddr{
-		Org: moduleAddr.Namespace,
-	}
+	org := vcs.OrganizationAddr(moduleAddr.Namespace)
 	repo := vcs.RepositoryAddr{
-		OrganizationAddr: org,
-		Name:             "terraform-" + moduleAddr.TargetSystem + "-" + moduleAddr.Name,
+		Org:  org,
+		Name: "terraform-" + moduleAddr.TargetSystem + "-" + moduleAddr.Name,
 	}
 
 	inMemoryVCS := fakevcs.New()
@@ -67,7 +65,7 @@ func TestUpdateModuleBackfill(t *testing.T) {
 	}
 
 	for i := 1; i <= createVersionCount; i++ {
-		if err := inMemoryVCS.CreateVersion(repo, "v1.0."+strconv.Itoa(i)); err != nil {
+		if err := inMemoryVCS.CreateVersion(repo, vcs.Version("v1.0."+strconv.Itoa(i))); err != nil {
 			t.Fatal(err)
 		}
 	}

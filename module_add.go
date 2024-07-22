@@ -25,7 +25,7 @@ func (m api) AddModule(ctx context.Context, repository string) error {
 	}
 
 	submitted := module.Addr{
-		Namespace:    githubRepository.Org,
+		Namespace:    string(githubRepository.Org),
 		Name:         match[moduleRepoRe.SubexpIndex("Name")],
 		TargetSystem: match[moduleRepoRe.SubexpIndex("Target")],
 	}
