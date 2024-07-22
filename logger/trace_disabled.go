@@ -1,0 +1,17 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: Apache-2.0
+
+//go:build !log_trace
+
+package logger
+
+import (
+	"context"
+)
+
+// LogTrace logs a trace message using the specified logger. This function should be used where the trace logs
+// may need to be disabled using a build flag. The purpose of this function is to enable inlining the noop function if
+// the build tag is disabled.
+func LogTrace(ctx context.Context, logger Logger, message string, args ...any) {
+
+}

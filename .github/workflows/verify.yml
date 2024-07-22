@@ -1,0 +1,46 @@
+name: Verify
+permissions: {}
+on:
+  pull_request:
+  push:
+jobs:
+  license:
+    name: License
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Check license headers
+        run: go run github.com/opentofu/libregistry/internal/tools/license-headers -check-only
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Lint
+        run: go run github.com/opentofu/libregistry/internal/tools/lint
+  tests:
+    name: Tests
+    strategy:
+      matrix:
+        os: [ubuntu, windows, macos]
+    runs-on: ${{ matrix.os }}-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+      - name: Run tests
+        run: |
+          go test ./...
