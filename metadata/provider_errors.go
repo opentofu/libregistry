@@ -13,6 +13,9 @@ type ProviderNotFoundError struct {
 }
 
 func (m ProviderNotFoundError) Error() string {
+	if m.Cause != nil {
+		return "Provider not found: " + m.ProviderAddr.String() + " (" + m.Cause.Error() + ")"
+	}
 	return "Provider not found: " + m.ProviderAddr.String()
 }
 

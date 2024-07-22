@@ -5,6 +5,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"path"
 	"strings"
@@ -19,6 +20,9 @@ func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool)
 		return nil, fmt.Errorf("failed to list '%s' directory (%w)", providersDirectory, err)
 	}
 
+	var namespaceAliases map[string]string
+	var providerAliases map[provider.Addr]provider.Addr
+
 	if includeAliases {
 		// Make sure we have the aliases in our letter list.
 		providerLetterSet := map[string]struct{}{}
@@ -26,12 +30,20 @@ func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool)
 			providerLetterSet[letter] = struct{}{}
 		}
 
-		aliases, err := r.ListProviderNamespaceAliases(ctx)
+		namespaceAliases, err = r.ListProviderNamespaceAliases(ctx)
 		if err != nil {
 			return nil, err
 		}
-		for from := range aliases {
+		for from := range namespaceAliases {
 			providerLetterSet[from[:1]] = struct{}{}
+		}
+
+		providerAliases, err = r.ListProviderAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+		for alias := range providerAliases {
+			providerLetterSet[alias.Namespace[:1]] = struct{}{}
 		}
 
 		providerLetters = make([]string, len(providerLetterSet))
@@ -44,7 +56,7 @@ func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool)
 
 	var results []provider.Addr
 	for _, letter := range providerLetters {
-		letterResults, e := r.listProvidersByNamespaceLetter(ctx, letter, includeAliases)
+		letterResults, e := r.listProvidersByNamespaceLetter(ctx, letter, includeAliases, namespaceAliases, providerAliases)
 		if e != nil {
 			return nil, e
 		}
@@ -53,7 +65,13 @@ func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool)
 	return results, nil
 }
 
-func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, letter string, includeAliases bool) ([]provider.Addr, error) {
+func (r registryDataAPI) listProvidersByNamespaceLetter(
+	ctx context.Context,
+	letter string,
+	includeAliases bool,
+	namespaceAliases map[string]string,
+	providerAliases map[provider.Addr]provider.Addr,
+) ([]provider.Addr, error) {
 	p := path.Join(providersDirectory, letter)
 	namespaces, e := r.storageAPI.ListDirectories(ctx, storage.Path(p))
 	if e != nil {
@@ -67,13 +85,14 @@ func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, let
 			providerNamespaceSet[namespace] = struct{}{}
 		}
 
-		aliases, err := r.ListProviderNamespaceAliases(ctx)
-		if err != nil {
-			return nil, err
-		}
-		for from := range aliases {
+		for from := range namespaceAliases {
 			if from[:1] == letter {
 				providerNamespaceSet[from] = struct{}{}
+			}
+		}
+		for from := range providerAliases {
+			if from.Namespace[:1] == letter {
+				providerNamespaceSet[from.Namespace] = struct{}{}
 			}
 		}
 
@@ -87,7 +106,7 @@ func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, let
 
 	var results []provider.Addr
 	for _, namespace := range namespaces {
-		namespaceResults, e2 := r.ListProvidersByNamespace(ctx, namespace, includeAliases)
+		namespaceResults, e2 := r.listProvidersByNamespace(ctx, namespace, includeAliases, includeAliases, namespaceAliases, providerAliases)
 		if e2 != nil {
 			return nil, e2
 		}
@@ -97,6 +116,32 @@ func (r registryDataAPI) listProvidersByNamespaceLetter(ctx context.Context, let
 }
 
 func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace string, includeAliases bool) ([]provider.Addr, error) {
+	var err error
+	var namespaceAliases map[string]string
+	var providerAliases map[provider.Addr]provider.Addr
+
+	if includeAliases {
+		namespaceAliases, err = r.ListProviderNamespaceAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		providerAliases, err = r.ListProviderAliases(ctx)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return r.listProvidersByNamespace(ctx, namespace, includeAliases, includeAliases, namespaceAliases, providerAliases)
+}
+
+func (r registryDataAPI) listProvidersByNamespace(
+	ctx context.Context,
+	namespace string,
+	includeNamespaceAliases bool,
+	includeProviderAliases bool,
+	namespaceAliases map[string]string,
+	providerAliases map[provider.Addr]provider.Addr,
+) ([]provider.Addr, error) {
 	namespace = provider.NormalizeNamespace(namespace)
 
 	p := path.Join(providersDirectory, namespace[0:1], namespace)
@@ -117,13 +162,9 @@ func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace
 		}
 	}
 
-	if includeAliases {
-		aliases, err := r.ListProviderNamespaceAliases(ctx)
-		if err != nil {
-			return nil, err
-		}
-		if target, ok := aliases[namespace]; ok {
-			aliasedProviderAddrs, err := r.ListProvidersByNamespace(ctx, target, false)
+	if includeNamespaceAliases {
+		if target, ok := namespaceAliases[namespace]; ok {
+			aliasedProviderAddrs, err := r.listProvidersByNamespace(ctx, target, false, true, namespaceAliases, providerAliases)
 			if err != nil {
 				return nil, err
 			}
@@ -132,6 +173,29 @@ func (r registryDataAPI) ListProvidersByNamespace(ctx context.Context, namespace
 				if _, present := providerAddrSet[addr]; !present {
 					result = append(result, addr)
 					providerAddrSet[addr] = struct{}{}
+				}
+			}
+		}
+	}
+
+	if includeProviderAliases {
+		for from, to := range providerAliases {
+			if from.Namespace == namespace {
+				addr := provider.Addr{
+					Namespace: namespace,
+					Name:      to.Name,
+				}
+				_, err = r.getProviderPathCanonical(ctx, addr)
+				if err != nil {
+					var notFound *ProviderNotFoundError
+					if !errors.As(err, &notFound) {
+						return nil, err
+					}
+				} else {
+					if _, present := providerAddrSet[addr]; !present {
+						result = append(result, addr)
+						providerAddrSet[addr] = struct{}{}
+					}
 				}
 			}
 		}

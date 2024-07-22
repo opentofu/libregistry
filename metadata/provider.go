@@ -15,6 +15,9 @@ type ProviderDataAPI interface {
 	// namespace, the value is the "to" namespace. The alias means that all providers in the "to" namespace should
 	// also be observed in the "from" namespace.
 	ListProviderNamespaceAliases(ctx context.Context) (map[string]string, error)
+	// ListProviderAliases lists individual provider aliases and their actual provider.Addr's. This is needed to support
+	// legacy provider addresses.
+	ListProviderAliases(ctx context.Context) (map[provider.Addr]provider.Addr, error)
 
 	// ListProviders returns all providers in the registry. The includeAliases parameter lets you include aliased copies
 	// of providers.
@@ -26,9 +29,9 @@ type ProviderDataAPI interface {
 	// GetProvider returns the metadata for a given provider address. The resolveAliases parameter lets you control
 	// if provider namespace aliases should be resolved or not.
 	GetProvider(ctx context.Context, addr provider.Addr, resolveAliases bool) (provider.Metadata, error)
-	// GetProviderCanonicalAddr returns the canonical address of a provider, resolving any namespace aliases and
-	// lowercasing the name. This function may return a *ProviderNotFoundError if the provider was not found in
-	// its original or in the target namespace.
+	// GetProviderCanonicalAddr returns the canonical address of a provider by recursively resolving namespace and
+	// provider aliases. The resolution is performed namespace aliases first, then provider aliases. The process is
+	// non-recursive, returning a *ProviderNotFoundError if the target provider does not exist.
 	GetProviderCanonicalAddr(ctx context.Context, addr provider.Addr) (provider.Addr, error)
 
 	// PutProvider queues up writing the specified provider metadata.

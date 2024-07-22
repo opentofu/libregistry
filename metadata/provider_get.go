@@ -13,6 +13,8 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
+const maxProviderAliasRecursionDepth = 5
+
 func (r registryDataAPI) GetProvider(ctx context.Context, providerAddr provider.Addr, resolveAliases bool) (provider.Metadata, error) {
 	var path storage.Path
 	var err error
@@ -24,6 +26,7 @@ func (r registryDataAPI) GetProvider(ctx context.Context, providerAddr provider.
 	} else {
 		path = r.getProviderPathRaw(providerAddr)
 	}
+
 	fileContents, err := r.storageAPI.GetFile(ctx, path)
 	if err != nil {
 		var notFound *storage.ErrFileNotFound
@@ -43,35 +46,63 @@ func (r registryDataAPI) GetProvider(ctx context.Context, providerAddr provider.
 }
 
 func (r registryDataAPI) GetProviderCanonicalAddr(ctx context.Context, providerAddr provider.Addr) (provider.Addr, error) {
+	providerAddr, _, err := r.getProviderCanonical(ctx, providerAddr)
+	return providerAddr, err
+}
+
+func (r registryDataAPI) getProviderCanonical(ctx context.Context, providerAddr provider.Addr) (provider.Addr, storage.Path, error) {
 	providerAddr = providerAddr.Normalize()
 	providerPath := r.getProviderPathRaw(providerAddr)
 	exists, err := r.storageAPI.FileExists(ctx, providerPath)
 	if err != nil {
-		return providerAddr, err
+		return providerAddr, providerPath, err
 	}
 	if exists {
-		return providerAddr, nil
-	}
-	aliases, err := r.ListProviderNamespaceAliases(ctx)
-	if err != nil {
-		return providerAddr, err
+		return providerAddr, providerPath, nil
 	}
 
-	if targetNamespace, ok := aliases[providerAddr.Namespace]; ok {
+	namespaceAliases, err := r.ListProviderNamespaceAliases(ctx)
+	if err != nil {
+		return providerAddr, providerPath, err
+	}
+
+	providerAliases, err := r.ListProviderAliases(ctx)
+	if err != nil {
+		return providerAddr, providerPath, err
+	}
+
+	providerAddr = providerAddr.Normalize()
+
+	if targetNamespace, ok := namespaceAliases[providerAddr.Namespace]; ok {
 		providerAddr = provider.Addr{
 			Namespace: targetNamespace,
 			Name:      providerAddr.Name,
-		}
+		}.Normalize()
 		providerPath = r.getProviderPathRaw(providerAddr)
 		exists, err = r.storageAPI.FileExists(ctx, providerPath)
 		if err != nil {
-			return providerAddr, err
+			return providerAddr, providerPath, err
 		}
 		if exists {
-			return providerAddr, nil
+			// If the aliased provider exists, don't look any further.
+			return providerAddr, providerPath, nil
 		}
 	}
-	return providerAddr, &ProviderNotFoundError{
+
+	if targetAddr, ok := providerAliases[providerAddr]; ok {
+		providerAddr = targetAddr.Normalize()
+		providerPath = r.getProviderPathRaw(providerAddr)
+		exists, err = r.storageAPI.FileExists(ctx, providerPath)
+		if err != nil {
+			return providerAddr, providerPath, err
+		}
+		if exists {
+			// If the aliased provider exists, don't look any further.
+			return providerAddr, providerPath, nil
+		}
+	}
+
+	return providerAddr, providerPath, &ProviderNotFoundError{
 		ProviderAddr: providerAddr,
 	}
 }

@@ -17,9 +17,6 @@ func (r registryDataAPI) getProviderPathRaw(providerAddr provider.Addr) storage.
 }
 
 func (r registryDataAPI) getProviderPathCanonical(ctx context.Context, providerAddr provider.Addr) (storage.Path, error) {
-	providerAddr, err := r.GetProviderCanonicalAddr(ctx, providerAddr)
-	if err != nil {
-		return "", err
-	}
-	return r.getProviderPathRaw(providerAddr), nil
+	_, providerPath, err := r.getProviderCanonical(ctx, providerAddr)
+	return providerPath, err
 }

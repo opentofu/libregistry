@@ -18,6 +18,8 @@ func TestProviderCRUD(t *testing.T) {
 	const testNamespace = "hashicorp"
 	const testName = "test"
 
+	// TODO: this test relies on the hard-coded list of namespace aliases. This should be changed to creating aliases
+	//       dynamically.
 	canonicalAddr := provider.Addr{
 		Namespace: testNamespace,
 		Name:      testName,
@@ -199,4 +201,103 @@ func TestProviderCRUD(t *testing.T) {
 		}
 	})
 	t.Run("5-list-get", checkEmpty)
+}
+
+// TestProviderIndividualAliases tests against a known legacy alias.
+func TestProviderIndividualAliases(t *testing.T) {
+	// TODO: this test relies on the hard-coded list of aliases. This should be changed to creating aliases dynamically.
+	canonicalAddr := provider.Addr{
+		Namespace: "integrations",
+		Name:      "github",
+	}
+	aliasedAddr1 := provider.Addr{
+		Namespace: "opentofu",
+		Name:      "github",
+	}
+	aliasedAddr2 := provider.Addr{
+		Namespace: "hashicorp",
+		Name:      "github",
+	}
+
+	providerVersion := provider.Version{
+		Version:             "v1.0.0",
+		Protocols:           []string{"5.0"},
+		SHASumsURL:          "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_SHA256SUMS",
+		SHASumsSignatureURL: "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_SHA256SUMS.sig",
+		Targets: []provider.Target{
+			{
+				OS:          "linux",
+				Arch:        "amd64",
+				Filename:    canonicalAddr.String() + "_linux_amd64.zip",
+				DownloadURL: "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_linux_amd64.zip",
+				SHASum:      "c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a",
+			},
+		},
+	}
+
+	providerMetadata := provider.Metadata{
+		Versions: []provider.Version{
+			providerVersion,
+		},
+	}
+
+	storage := memory.New()
+	api, err := metadata.New(storage)
+	if err != nil {
+		t.Fatalf("Failed to initialize API (%v)", err)
+	}
+
+	ctx := context.Background()
+
+	if err := api.PutProvider(ctx, canonicalAddr, providerMetadata); err != nil {
+		t.Fatalf("Failed to put provider (%v)", err)
+	}
+
+	providers, err := api.ListProviders(ctx, false)
+	if err != nil {
+		t.Fatalf("Failed to list providers (%v)", err)
+	}
+	if len(providers) != 1 {
+		t.Fatalf("Incorrect number of providers: %d", len(providers))
+	}
+	if !providers[0].Equals(canonicalAddr) {
+		t.Fatalf("Incorrect provider address returned: %s", providers[0].String())
+	}
+
+	providers, err = api.ListProviders(ctx, true)
+	if err != nil {
+		t.Fatalf("Failed to list providers (%v)", err)
+	}
+	if len(providers) != 3 {
+		t.Fatalf("Incorrect number of providers: %d", len(providers))
+	}
+	if !providers[0].Equals(canonicalAddr) && !providers[1].Equals(canonicalAddr) && !providers[2].Equals(canonicalAddr) {
+		t.Fatalf("The canonical address (%s) was not returned.", canonicalAddr.String())
+	}
+	if !providers[0].Equals(aliasedAddr1) && !providers[1].Equals(aliasedAddr1) && !providers[2].Equals(aliasedAddr1) {
+		t.Fatalf("The aliased address (%s) was not returned.", aliasedAddr1)
+	}
+	if !providers[0].Equals(aliasedAddr2) && !providers[1].Equals(aliasedAddr2) && !providers[2].Equals(aliasedAddr2) {
+		t.Fatalf("The aliased address (%s) was not returned.", aliasedAddr2)
+	}
+
+	for _, addr := range []provider.Addr{aliasedAddr1, aliasedAddr2} {
+		_, err := api.GetProvider(ctx, addr, false)
+		if err == nil {
+			t.Fatalf("Querying a provider by its aliased address without resolveAliases did not return an error.")
+		}
+		var notFound *metadata.ProviderNotFoundError
+		if !errors.As(err, &notFound) {
+			t.Fatalf("Querying a provider by its aliased address without resolveAliases returned the incorrect error type (%T instead of %T).", err, notFound)
+		}
+	}
+	for _, addr := range []provider.Addr{canonicalAddr, aliasedAddr1, aliasedAddr2} {
+		meta, err := api.GetProvider(ctx, addr, true)
+		if err != nil {
+			t.Fatalf("Querying the provider with the addr of %s and resolveAliases=true returned an error (%v)", addr.String(), err)
+		}
+		if !meta.Equals(providerMetadata) {
+			t.Fatalf("Metadata mismatch when querying with the addr of %s", addr.String())
+		}
+	}
 }
