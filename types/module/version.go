@@ -14,3 +14,7 @@ func (v Version) Normalize() Version {
 		Version: v.Version.Normalize(),
 	}
 }
+
+func (v Version) Equals(other Version) bool {
+	return v.Version.Normalize() == other.Version.Normalize()
+}

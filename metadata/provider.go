@@ -26,6 +26,10 @@ type ProviderDataAPI interface {
 	// parameter lets you include aliased copies of providers.
 	ListProvidersByNamespace(ctx context.Context, namespace string, includeAliases bool) ([]provider.Addr, error)
 
+	// GetAllProviders returns a map of provider addresses to their metadata. Passing includeAliases will return
+	// duplicate entries for aliases and their original source.
+	GetAllProviders(ctx context.Context, includeAliases bool) (map[provider.Addr]provider.Metadata, error)
+
 	// GetProvider returns the metadata for a given provider address. The resolveAliases parameter lets you control
 	// if provider namespace aliases should be resolved or not.
 	GetProvider(ctx context.Context, addr provider.Addr, resolveAliases bool) (provider.Metadata, error)
