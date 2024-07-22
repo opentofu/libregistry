@@ -9,3 +9,7 @@ type Metadata struct {
 	// Versions lists all available versions of a Namespace-Name-TargetSystem combination.
 	Versions VersionList `json:"versions"`
 }
+
+func (m Metadata) Equals(other Metadata) bool {
+	return m.Versions.Equals(other.Versions)
+}

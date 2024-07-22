@@ -38,3 +38,15 @@ func (v VersionList) Sort() {
 	}
 	slices.SortFunc(v, semverSortFunc)
 }
+
+func (v VersionList) Equals(other VersionList) bool {
+	if len(v) != len(other) {
+		return false
+	}
+	for i := 0; i < len(v); i++ {
+		if !v[i].Equals(other[i]) {
+			return false
+		}
+	}
+	return true
+}

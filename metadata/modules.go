@@ -21,6 +21,9 @@ type ModuleDataAPI interface {
 	// GetModule returns the current, uncommitted state of a module.
 	GetModule(ctx context.Context, moduleAddr module.Addr) (module.Metadata, error)
 
+	// GetAllModules returns a map of all module addresses and the metadata.
+	GetAllModules(ctx context.Context) (map[module.Addr]module.Metadata, error)
+
 	// PutModule queues the addition of a module with the given metadata. Call Commit() to write the changes
 	// to the backing storage.
 	PutModule(ctx context.Context, moduleAddr module.Addr, metadata module.Metadata) error
