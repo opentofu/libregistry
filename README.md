@@ -1,5 +1,8 @@
 # Go library for the OpenTofu registry
 
+> [!WARNING]
+> This library is experimental.
+
 This Go library implements the OpenTofu registry and also provides a library to access the underlying data. You can install this library by running:
 
 ```
@@ -31,7 +34,7 @@ func main() {
     if err != nil {
         panic(err)
     }
-    
+
     // Do something with modules here.
 }
 ```
