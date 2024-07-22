@@ -48,7 +48,7 @@ func (f *storageAPI) ListDirectories(_ context.Context, directory storage.Path) 
 		return nil, err
 	}
 
-	dir, err := os.ReadDir(path.Join(f.directory, string(directory.Basename())))
+	dir, err := os.ReadDir(path.Join(f.directory, string(directory)))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
