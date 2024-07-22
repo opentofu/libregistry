@@ -19,6 +19,12 @@ type slogLogger struct {
 	backingLogger *slog.Logger
 }
 
+func (s slogLogger) WithName(name string) Logger {
+	return &slogLogger{
+		s.backingLogger.WithGroup(name),
+	}
+}
+
 func (s slogLogger) Trace(ctx context.Context, message string, args ...any) {
 	s.backingLogger.Log(ctx, -8, message, args...)
 }

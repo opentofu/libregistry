@@ -15,6 +15,10 @@ func NewNoopLogger() Logger {
 type noopLogger struct {
 }
 
+func (n noopLogger) WithName(_ string) Logger {
+	return n
+}
+
 func (n noopLogger) Trace(ctx context.Context, message string, args ...any) {
 
 }

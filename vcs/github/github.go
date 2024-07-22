@@ -39,6 +39,8 @@ func New(
 		log = logger.NewNoopLogger()
 	}
 
+	log = log.WithName("GitHub")
+
 	return &github{
 		token:      token,
 		httpClient: httpClient,

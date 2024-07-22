@@ -9,6 +9,8 @@ import (
 
 // Logger is a description of the functions needed for logging in this library.
 type Logger interface {
+	// WithName creates a new named logger.
+	WithName(name string) Logger
 	Trace(ctx context.Context, message string, args ...any)
 	Debug(ctx context.Context, message string, args ...any)
 	Info(ctx context.Context, message string, args ...any)

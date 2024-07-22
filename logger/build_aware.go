@@ -18,6 +18,12 @@ type buildAwareLogger struct {
 	backingLogger Logger
 }
 
+func (b buildAwareLogger) WithName(name string) Logger {
+	return &buildAwareLogger{
+		b.backingLogger.WithName(name),
+	}
+}
+
 func (b buildAwareLogger) Trace(ctx context.Context, message string, args ...any) {
 	LogTrace(ctx, b.backingLogger, message, args...)
 }

@@ -11,30 +11,47 @@ import (
 // NewGoLogLogger creates a logger which writes to the traditional *log.Logger.
 func NewGoLogLogger(logger *log.Logger) Logger {
 	return &goLogLogger{
+		"",
 		logger,
 	}
 }
 
 type goLogLogger struct {
+	prefix string
 	logger *log.Logger
 }
 
-func (g goLogLogger) Trace(_ context.Context, message string, args ...any) {
-	g.logger.Printf("TRACE\t"+message, args...)
+func (g goLogLogger) WithName(name string) Logger {
+	return &goLogLogger{
+		name + "\t",
+		g.logger,
+	}
 }
 
-func (g goLogLogger) Debug(_ context.Context, message string, args ...any) {
-	g.logger.Printf("DEBUG\t"+message, args...)
+func (g goLogLogger) log(_ context.Context, level string, message string, args ...any) {
+	if g.prefix != "" {
+		g.logger.Printf(g.prefix+level+"\t"+message, args...)
+	} else {
+		g.logger.Printf(level+"\t"+message, args...)
+	}
 }
 
-func (g goLogLogger) Info(_ context.Context, message string, args ...any) {
-	g.logger.Printf("INFO\t"+message, args...)
+func (g goLogLogger) Trace(ctx context.Context, message string, args ...any) {
+	g.log(ctx, "TRACE", message, args...)
 }
 
-func (g goLogLogger) Warn(_ context.Context, message string, args ...any) {
-	g.logger.Printf("WARN\t"+message, args...)
+func (g goLogLogger) Debug(ctx context.Context, message string, args ...any) {
+	g.log(ctx, "DEBUG", message, args...)
 }
 
-func (g goLogLogger) Error(_ context.Context, message string, args ...any) {
-	g.logger.Printf("ERROR\t"+message, args...)
+func (g goLogLogger) Info(ctx context.Context, message string, args ...any) {
+	g.log(ctx, "INFO", message, args...)
+}
+
+func (g goLogLogger) Warn(ctx context.Context, message string, args ...any) {
+	g.log(ctx, "WARN", message, args...)
+}
+
+func (g goLogLogger) Error(ctx context.Context, message string, args ...any) {
+	g.log(ctx, "ERROR", message, args...)
 }
