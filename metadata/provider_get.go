@@ -13,8 +13,6 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-const maxProviderAliasRecursionDepth = 5
-
 func (r registryDataAPI) GetProvider(ctx context.Context, providerAddr provider.Addr, resolveAliases bool) (provider.Metadata, error) {
 	var path storage.Path
 	var err error

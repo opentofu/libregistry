@@ -341,7 +341,7 @@ func (g github) HasPermission(ctx context.Context, username vcs.Username, organi
 		return false, err
 	}
 	for _, member := range response {
-		if strings.ToLower(member.Login) == strings.ToLower(string(username)) {
+		if strings.EqualFold(member.Login, string(username)) {
 			return true, nil
 		}
 	}
