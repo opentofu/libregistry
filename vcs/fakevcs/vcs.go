@@ -9,23 +9,12 @@ import (
 	"io/fs"
 	"strings"
 
-	"github.com/opentofu/libregistry/types/module"
 	"github.com/opentofu/libregistry/vcs"
 )
 
 type inMemoryVCS struct {
 	users         map[vcs.Username]struct{}
 	organizations map[vcs.OrganizationAddr]*org
-}
-
-func (i *inMemoryVCS) VersionToModuleVersion(version vcs.Version) (module.VersionNumber, error) {
-	ver := module.VersionNumber(version).Normalize()
-	return ver, ver.Validate()
-}
-
-func (i *inMemoryVCS) ModuleVersionToVersion(version module.VersionNumber) (vcs.Version, error) {
-	ver := vcs.Version(version.Normalize())
-	return ver, ver.Validate()
 }
 
 func (i *inMemoryVCS) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {

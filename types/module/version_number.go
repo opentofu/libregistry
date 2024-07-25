@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/opentofu/libregistry/vcs"
 	"golang.org/x/mod/semver"
 )
 
@@ -34,6 +35,11 @@ func (v VersionNumber) Validate() error {
 		return &InvalidVersionNumber{v}
 	}
 	return nil
+}
+
+// ToVCSVersion creates a vcs.Version from the VersionNumber.
+func (v VersionNumber) ToVCSVersion() vcs.Version {
+	return vcs.Version(v.Normalize())
 }
 
 type InvalidVersionNumber struct {

@@ -6,21 +6,12 @@ package vcs
 import (
 	"context"
 	"io/fs"
-
-	"github.com/opentofu/libregistry/types/module"
 )
 
 // Client describes a VCS client.
 type Client interface {
 	// ParseRepositoryAddr parses the repository address from a string.
 	ParseRepositoryAddr(ref string) (RepositoryAddr, error)
-
-	// VersionToModuleVersion converts a tag or release version to a module version observing the rule for this
-	// particular VCS.
-	VersionToModuleVersion(version Version) (module.VersionNumber, error)
-
-	// ModuleVersionToVersion converts a module version number to a VCS tag or release number.
-	ModuleVersionToVersion(version module.VersionNumber) (Version, error)
 
 	// ListLatestTags returns the last few tags in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllTags.

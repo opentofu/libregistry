@@ -25,3 +25,9 @@ func AddrFromRepository(repository vcs.RepositoryAddr) (Addr, error) {
 		TargetSystem: match[moduleRepoRe.SubexpIndex("Target")],
 	}, nil
 }
+
+// VersionFromVCS converts a vcs.Version into a VersionNumber.
+func VersionFromVCS(vcsVersion vcs.Version) (VersionNumber, error) {
+	ver := VersionNumber(vcsVersion)
+	return ver, ver.Validate()
+}

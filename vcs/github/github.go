@@ -22,7 +22,6 @@ import (
 	"sync"
 
 	"github.com/opentofu/libregistry/logger"
-	"github.com/opentofu/libregistry/types/module"
 	"github.com/opentofu/libregistry/vcs"
 )
 
@@ -174,16 +173,6 @@ func (g github) git(ctx context.Context, dir string, params ...string) error {
 		return fmt.Errorf("%s exited with exit code %d", commandString, exitErr.ExitCode())
 	}
 	return nil
-}
-
-func (g github) VersionToModuleVersion(version vcs.Version) (module.VersionNumber, error) {
-	ver := module.VersionNumber(version).Normalize()
-	return ver, ver.Validate()
-}
-
-func (g github) ModuleVersionToVersion(version module.VersionNumber) (vcs.Version, error) {
-	ver := vcs.Version(version.Normalize())
-	return ver, ver.Validate()
 }
 
 func (g github) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
