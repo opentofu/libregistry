@@ -120,6 +120,7 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 
 	return &workingCopy{
 		ReadDirFS: os.DirFS(checkoutDirectory).(fs.ReadDirFS),
+		dir:       checkoutDirectory,
 		cleanup:   cleanup,
 	}, nil
 }
@@ -127,6 +128,11 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 type workingCopy struct {
 	fs.ReadDirFS
 	cleanup func()
+	dir     string
+}
+
+func (w workingCopy) RawDirectory() (string, error) {
+	return w.dir, nil
 }
 
 func (w workingCopy) Close() error {

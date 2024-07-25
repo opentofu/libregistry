@@ -49,5 +49,9 @@ type Client interface {
 
 type WorkingCopy interface {
 	fs.ReadDirFS
+	// RawDirectory returns the underlying raw directory of the working copy. This should be used with care as any open
+	// file descriptors may cause the Close() call to fail. Modifications to this directory should also be avoided.
+	// This call may return an error if raw directory access is not supported.
+	RawDirectory() (string, error)
 	Close() error
 }

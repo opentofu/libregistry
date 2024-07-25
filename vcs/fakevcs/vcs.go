@@ -5,6 +5,7 @@ package fakevcs
 
 import (
 	"context"
+	"fmt"
 	"io/fs"
 	"strings"
 
@@ -333,6 +334,10 @@ func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.Repositor
 
 type workingCopy struct {
 	fs.ReadDirFS
+}
+
+func (w workingCopy) RawDirectory() (string, error) {
+	return "", fmt.Errorf("raw directory access is not supported for the fake VCS")
 }
 
 func (w workingCopy) Close() error {
