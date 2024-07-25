@@ -16,8 +16,8 @@ func TestWriter(t *testing.T) {
 	log := &collectingTestLogger{}
 
 	const testMessage1 = "Hello world!"
-	const testMessage2 = "Hello world!"
-	const testMessage3 = "Hello world!"
+	const testMessage2 = "Hello world2"
+	const testMessage3 = "Hello world3"
 
 	wr := logger.NewWriter(ctx, log, logger.LevelDebug, "")
 

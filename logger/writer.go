@@ -42,10 +42,7 @@ func (w *writer) Write(p []byte) (n int, err error) {
 	lastLineStart := 0
 	for i, b := range w.buf {
 		if b == 10 || b == 13 {
-			line := strings.Trim(string(w.buf[lastLineStart:i]), "\r\n")
-			if line != "" {
-				w.writeLine(line)
-			}
+			w.writeLine(string(w.buf[lastLineStart:i]))
 			lastLineStart = i
 			// Trim single remaining newline:
 			if lastLineStart == len(w.buf)-1 {
@@ -59,7 +56,12 @@ func (w *writer) Write(p []byte) (n int, err error) {
 }
 
 func (w *writer) writeLine(line string) {
-	msg := w.prefix + line
+	// Work around left-over newlines:
+	msgSuffix := strings.Trim(line, "\r\n")
+	if msgSuffix == "" {
+		return
+	}
+	msg := w.prefix + msgSuffix
 	switch w.level {
 	case LevelTrace:
 		LogTrace(w.ctx, w.logger, "%s", msg)
