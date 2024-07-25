@@ -5,6 +5,7 @@ package fakevcs
 
 import (
 	"context"
+	"io/fs"
 	"strings"
 
 	"github.com/opentofu/libregistry/vcs"
@@ -191,7 +192,7 @@ func (i *inMemoryVCS) CreateRepository(repositoryAddr vcs.RepositoryAddr) error 
 	return nil
 }
 
-func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version) error {
+func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version, contents fs.ReadDirFS) error {
 	if err := repositoryAddr.Validate(); err != nil {
 		return err
 	}
@@ -220,8 +221,9 @@ func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionNa
 	}
 	repo.versions = append([]version{
 		{
-			name:   versionName,
-			assets: map[vcs.AssetName][]byte{},
+			name:     versionName,
+			assets:   map[vcs.AssetName][]byte{},
+			contents: contents,
 		},
 	}, repo.versions...)
 	return nil
@@ -293,5 +295,46 @@ func (i *inMemoryVCS) AddMember(organizationAddr vcs.OrganizationAddr, username 
 		}
 	}
 	org.users[username] = struct{}{}
+	return nil
+}
+
+func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version) (vcs.WorkingCopy, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return nil, err
+	}
+	if err := version.Validate(); err != nil {
+		return nil, err
+	}
+	org, ok := i.organizations[repositoryAddr.Org]
+	if !ok {
+		return nil, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+	repo, ok := org.repositories[repositoryAddr]
+	if !ok {
+		return nil, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+	for _, ver := range repo.versions {
+		if ver.name == version {
+			return &workingCopy{
+				ver.contents,
+			}, nil
+		}
+	}
+	return nil, &vcs.VersionNotFoundError{
+		RepositoryAddr: repositoryAddr,
+		Version:        version,
+		Cause:          nil,
+	}
+}
+
+type workingCopy struct {
+	fs.ReadDirFS
+}
+
+func (w workingCopy) Close() error {
 	return nil
 }

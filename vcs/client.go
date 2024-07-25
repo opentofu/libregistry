@@ -5,6 +5,7 @@ package vcs
 
 import (
 	"context"
+	"io/fs"
 )
 
 // Client describes a VCS client.
@@ -36,4 +37,17 @@ type Client interface {
 
 	// HasPermission returns true if the user has permission to act on behalf of an organization.
 	HasPermission(ctx context.Context, username Username, organization OrganizationAddr) (bool, error)
+
+	// Checkout clones/checks out a working copy of the given repository at a given version for accessing the files
+	// in the repository. The caller is responsible for calling Close on the WorkingCopy when finished to allow a
+	// cleanup or release any locks.
+	//
+	// Note that the implementation may limit the concurrent use of a repository to a single WorkingCopy at a time in
+	// order to adhere to any rate limits the VCS system may impose.
+	Checkout(ctx context.Context, repository RepositoryAddr, version Version) (WorkingCopy, error)
+}
+
+type WorkingCopy interface {
+	fs.ReadDirFS
+	Close() error
 }

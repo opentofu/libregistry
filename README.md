@@ -59,7 +59,8 @@ import (
 )
 
 func main() {
-	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil, nil)
+	// github.New has more options, check the github package for details.
+	ghClient, err := github.New(github.WithToken(os.Getenv("GITHUB_TOKEN")))
 	if err != nil {
 		panic(err)
 	}
