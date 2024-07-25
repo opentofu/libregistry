@@ -22,3 +22,7 @@ func (v Version) Equals(other Version) bool {
 func (v Version) Compare(other Version) int {
 	return v.Version.Compare(other.Version)
 }
+
+func (v Version) Validate() error {
+	return v.Version.Validate()
+}

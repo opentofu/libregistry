@@ -4,10 +4,15 @@
 package module
 
 import (
+	"regexp"
 	"strings"
 
 	"golang.org/x/mod/semver"
 )
+
+var versionRe = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(|-[a-zA-Z0-9-]+)$`)
+
+const maxVersionLength = 255
 
 // VersionNumber describes the semver version number.
 type VersionNumber string
@@ -18,4 +23,23 @@ func (v VersionNumber) Normalize() VersionNumber {
 
 func (v VersionNumber) Compare(other VersionNumber) int {
 	return semver.Compare(string(v.Normalize()), string(other.Normalize()))
+}
+
+func (v VersionNumber) Validate() error {
+	normalizedV := v.Normalize()
+	if len(normalizedV) > maxVersionLength {
+		return &InvalidVersionNumber{v}
+	}
+	if !versionRe.MatchString(string(normalizedV)) {
+		return &InvalidVersionNumber{v}
+	}
+	return nil
+}
+
+type InvalidVersionNumber struct {
+	VersionNumber VersionNumber
+}
+
+func (i InvalidVersionNumber) Error() string {
+	return "Invalid version: " + string(i.VersionNumber)
 }
