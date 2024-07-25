@@ -5,8 +5,6 @@ package module
 
 import (
 	"slices"
-
-	"golang.org/x/mod/semver"
 )
 
 // VersionList is a slice of versions.
@@ -34,7 +32,7 @@ func (v VersionList) Merge(other VersionList) VersionList {
 // Sort returns a sorted copy of the version list.
 func (v VersionList) Sort() {
 	semverSortFunc := func(a, b Version) int {
-		return -semver.Compare(string(a.Version.Normalize()), string(b.Version.Normalize()))
+		return -a.Compare(b)
 	}
 	slices.SortFunc(v, semverSortFunc)
 }

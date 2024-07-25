@@ -18,3 +18,7 @@ func (v Version) Normalize() Version {
 func (v Version) Equals(other Version) bool {
 	return v.Version.Normalize() == other.Version.Normalize()
 }
+
+func (v Version) Compare(other Version) int {
+	return v.Version.Compare(other.Version)
+}

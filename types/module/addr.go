@@ -6,6 +6,7 @@ package module
 import (
 	"fmt"
 
+	"github.com/opentofu/libregistry/vcs"
 	regaddr "github.com/opentofu/registry-address"
 )
 
@@ -41,4 +42,11 @@ func (a Addr) Equals(other Addr) bool {
 	current := a.Normalize()
 	other = other.Normalize()
 	return current.Namespace == other.Namespace && current.Name == other.Namespace && current.TargetSystem == other.TargetSystem
+}
+
+func (a Addr) ToRepositoryAddr() vcs.RepositoryAddr {
+	return vcs.RepositoryAddr{
+		Org:  vcs.OrganizationAddr(a.Namespace),
+		Name: "terraform-" + a.TargetSystem + "-" + a.Name,
+	}
 }
