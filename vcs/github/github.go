@@ -5,16 +5,21 @@ package github
 
 import (
 	"context"
-	"crypto/tls"
 	"encoding/json"
 	"encoding/xml"
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"net/url"
+	"os"
+	"os/exec"
+	"path"
+	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/vcs"
@@ -22,36 +27,152 @@ import (
 
 // New creates a new GitHub VCS client.
 func New(
-	token string,
-	httpClient *http.Client,
-	log logger.Logger,
+	options ...Opt,
 ) (vcs.Client, error) {
-	if httpClient == nil {
-		httpClient = http.DefaultClient
-		transport := http.DefaultTransport.(*http.Transport)
-		transport.TLSClientConfig = &tls.Config{
-			MinVersion: tls.VersionTLS13,
+	config := Config{}
+	for _, opt := range options {
+		if err := opt(&config); err != nil {
+			return nil, err
 		}
-		httpClient.Transport = transport
 	}
-
-	if log == nil {
-		log = logger.NewNoopLogger()
-	}
-
-	log = log.WithName("GitHub")
+	config.ApplyDefaults()
 
 	return &github{
-		token:      token,
-		httpClient: httpClient,
-		logger:     log,
+		config: config,
+		lock:   &sync.Mutex{},
+		locks:  map[string]*sync.Mutex{},
 	}, nil
 }
 
 type github struct {
-	token      string
-	httpClient *http.Client
-	logger     logger.Logger
+	config Config
+	lock   *sync.Mutex
+	locks  map[string]*sync.Mutex
+}
+
+func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, version vcs.Version) (vcs.WorkingCopy, error) {
+	if err := repository.Validate(); err != nil {
+		return nil, err
+	}
+	if err := version.Validate(); err != nil {
+		return nil, err
+	}
+	parentDirectory := path.Join(g.config.CheckoutRootDirectory, string(repository.Org), repository.Name)
+	checkoutDirectory := path.Join(parentDirectory, repository.Name)
+	gitDirectory := path.Join(checkoutDirectory, ".git")
+
+	g.lock.Lock()
+	lock, ok := g.locks[checkoutDirectory]
+	if !ok {
+		lock = &sync.Mutex{}
+		g.locks[checkoutDirectory] = lock
+	}
+	g.lock.Unlock()
+	lock.Lock()
+	cleanup := func() {
+		g.lock.Lock()
+
+		if !g.config.SkipCleanupWorkingCopyOnClose {
+			// Make sure that any open file descriptors are closed before cleaning up the directory so Windows file
+			// locking doesn't block the cleanup:
+			runtime.GC()
+
+			if err := os.RemoveAll(checkoutDirectory); err != nil {
+				g.config.Logger.Debug(ctx, "Failed to clean up clone repository at %s (%v)", checkoutDirectory, err)
+			}
+		}
+
+		delete(g.locks, checkoutDirectory)
+		lock.Unlock()
+		g.lock.Unlock()
+	}
+
+	stat, err := os.Stat(gitDirectory)
+	if err != nil || !stat.IsDir() {
+		if err := os.RemoveAll(checkoutDirectory); err != nil {
+			cleanup()
+			return nil, fmt.Errorf("failed to remove broken checkout directory %s (%w)", checkoutDirectory, err)
+		}
+		if err := os.MkdirAll(parentDirectory, 0700); err != nil {
+			cleanup()
+			return nil, fmt.Errorf("failed to create checkout parent directory %s (%w)", parentDirectory, err)
+		}
+		credentials := ""
+		if g.config.Username != "" && g.config.Token != "" {
+			credentials = url.PathEscape(g.config.Username) + ":" + url.PathEscape(g.config.Token) + "@"
+		}
+		cloneURL := "https://" + credentials + "github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + ".git"
+		if err := g.git(ctx, parentDirectory, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
+			cleanup()
+			return nil, err
+		}
+	}
+
+	if err := g.git(ctx, checkoutDirectory, "fetch", "--tags"); err != nil {
+		cleanup()
+		return nil, err
+	}
+
+	if err := g.git(ctx, checkoutDirectory, "checkout", string(version)); err != nil {
+		cleanup()
+		return nil, err
+	}
+
+	return &workingCopy{
+		ReadDirFS: os.DirFS(checkoutDirectory).(fs.ReadDirFS),
+		dir:       checkoutDirectory,
+		cleanup:   cleanup,
+	}, nil
+}
+
+type workingCopy struct {
+	fs.ReadDirFS
+	cleanup func()
+	dir     string
+}
+
+func (w workingCopy) RawDirectory() (string, error) {
+	return w.dir, nil
+}
+
+func (w workingCopy) Close() error {
+	w.cleanup()
+	return nil
+}
+
+func (g github) git(ctx context.Context, dir string, params ...string) error {
+	cmd := exec.Command(g.config.GitPath, params...)
+	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
+	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)
+	cmd.Stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	cmd.Dir = dir
+	done := make(chan struct{})
+	if err := cmd.Start(); err != nil {
+		return fmt.Errorf("failed to run %s (%w)", commandString, err)
+	}
+	var lastErr error
+	go func() {
+		defer close(done)
+		lastErr = cmd.Wait()
+	}()
+	select {
+	case <-done:
+	case <-ctx.Done():
+		_ = cmd.Process.Kill()
+		<-done
+	}
+	if lastErr == nil {
+		return nil
+	}
+	var exitErr *exec.ExitError
+	if !errors.As(lastErr, &exitErr) {
+		return fmt.Errorf("%s failed (%w)", commandString, lastErr)
+	}
+	if exitErr.ExitCode() != 0 {
+		return fmt.Errorf("%s exited with exit code %d", commandString, exitErr.ExitCode())
+	}
+	return nil
 }
 
 func (g github) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
@@ -77,12 +198,12 @@ type rss struct {
 }
 
 func (g github) ListLatestTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	logger.LogTrace(ctx, g.logger, "Requesting latest tags for repository %s...", repository)
+	logger.LogTrace(ctx, g.config.Logger, "Requesting latest tags for repository %s...", repository)
 	return g.listLatest(ctx, repository, "tags.atom")
 }
 
 func (g github) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	logger.LogTrace(ctx, g.logger, "Requesting latest releases for repository %s...", repository)
+	logger.LogTrace(ctx, g.config.Logger, "Requesting latest releases for repository %s...", repository)
 	return g.listLatest(ctx, repository, "releases.atom")
 }
 
@@ -97,7 +218,7 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 			Cause: fmt.Errorf("invalid HTTP request (%w)", err),
 		}
 	}
-	resp, err := g.httpClient.Do(req)
+	resp, err := g.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, &vcs.RequestFailedError{
 			Cause: err,
@@ -125,7 +246,7 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 		version := vcs.Version(entry.Title)
 		err = version.Validate()
 		if err != nil {
-			g.logger.Debug(ctx, "Skipping invalid version %s when querying %s in repository %s", version, file, repository)
+			g.config.Logger.Debug(ctx, "Skipping invalid version %s when querying %s in repository %s", version, file, repository)
 		} else {
 			result = append(result, version)
 		}
@@ -134,12 +255,12 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 }
 
 func (g github) ListAllTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	logger.LogTrace(ctx, g.logger, "Requesting all tags for repository %s...", repository)
+	logger.LogTrace(ctx, g.config.Logger, "Requesting all tags for repository %s...", repository)
 	return g.listAll(ctx, repository, "tag")
 }
 
 func (g github) ListAllReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	logger.LogTrace(ctx, g.logger, "Requesting all releases for repository %s...", repository)
+	logger.LogTrace(ctx, g.config.Logger, "Requesting all releases for repository %s...", repository)
 	return g.listAll(ctx, repository, "release")
 }
 
@@ -169,7 +290,7 @@ func (g github) listAll(ctx context.Context, repository vcs.RepositoryAddr, item
 	for _, item := range response {
 		err := item.Name.Validate()
 		if err != nil {
-			g.logger.Debug(ctx, "Skipping invalid %s %s in repository %s", itemType, item.Name, repository)
+			g.config.Logger.Debug(ctx, "Skipping invalid %s %s in repository %s", itemType, item.Name, repository)
 		} else {
 			result = append(result, item.Name)
 		}
@@ -184,13 +305,13 @@ func (g github) request(ctx context.Context, url string, response any) error {
 			Cause: fmt.Errorf("invalid HTTP request (%w)", err),
 		}
 	}
-	if g.token != "" {
-		req.Header.Set("Authorization", "Bearer "+g.token)
+	if g.config.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+g.config.Token)
 	}
-	logger.LogTrace(ctx, g.logger, "Sending GET request to %s...", url)
-	resp, err := g.httpClient.Do(req)
+	logger.LogTrace(ctx, g.config.Logger, "Sending GET request to %s...", url)
+	resp, err := g.config.HTTPClient.Do(req)
 	if err != nil {
-		logger.LogTrace(ctx, g.logger, "GET request to %s failed (%v)", url, err)
+		logger.LogTrace(ctx, g.config.Logger, "GET request to %s failed (%v)", url, err)
 		return &vcs.RequestFailedError{
 			Cause: err,
 		}
@@ -198,7 +319,7 @@ func (g github) request(ctx context.Context, url string, response any) error {
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	logger.LogTrace(ctx, g.logger, "GET request to %s returned status code %d", url, resp.StatusCode)
+	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", url, resp.StatusCode)
 	if resp.StatusCode != 200 {
 		return &vcs.RequestFailedError{
 			Cause: &InvalidStatusCodeError{resp.StatusCode},
@@ -208,7 +329,7 @@ func (g github) request(ctx context.Context, url string, response any) error {
 	decoder := json.NewDecoder(resp.Body)
 
 	if err := decoder.Decode(&response); err != nil {
-		g.logger.Warn(ctx, "GitHub returned an invalid JSON when requesting %s (%v)", url, err)
+		g.config.Logger.Warn(ctx, "GitHub returned an invalid JSON when requesting %s (%v)", url, err)
 		return &vcs.RequestFailedError{
 			Cause: fmt.Errorf("failed to decode response (%w)", err),
 		}
@@ -218,7 +339,7 @@ func (g github) request(ctx context.Context, url string, response any) error {
 }
 
 func (g github) ListAssets(ctx context.Context, repository vcs.RepositoryAddr, version vcs.Version) ([]vcs.AssetName, error) {
-	logger.LogTrace(ctx, g.logger, "Listing assets for repository %s version %s", repository, version)
+	logger.LogTrace(ctx, g.config.Logger, "Listing assets for repository %s version %s", repository, version)
 
 	type responseItem struct {
 		Name   string `json:"name"`
@@ -253,7 +374,7 @@ func (g github) ListAssets(ctx context.Context, repository vcs.RepositoryAddr, v
 	for _, asset := range response.Assets {
 		err := asset.Name.Validate()
 		if err != nil {
-			g.logger.Debug(ctx, "Skipping invalid asset named %s in repository %s release %s", asset.Name, repository, version)
+			g.config.Logger.Debug(ctx, "Skipping invalid asset named %s in repository %s release %s", asset.Name, repository, version)
 		} else {
 			result = append(result, asset.Name)
 		}
@@ -271,7 +392,7 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 	if err := asset.Validate(); err != nil {
 		return nil, err
 	}
-	logger.LogTrace(ctx, g.logger, "Listing asset %s for repository %s version %s", asset, repository, version)
+	logger.LogTrace(ctx, g.config.Logger, "Listing asset %s for repository %s version %s", asset, repository, version)
 	assetURL := "https://api.github.com/repos/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + "/releases/download/" + url.PathEscape(string(version)) + "/" + url.PathEscape(string(asset))
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, assetURL, nil)
 	if err != nil {
@@ -279,13 +400,13 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 			Cause: fmt.Errorf("invalid HTTP request (%w)", err),
 		}
 	}
-	if g.token != "" {
-		req.Header.Set("Authorization", "Bearer "+g.token)
+	if g.config.Token != "" {
+		req.Header.Set("Authorization", "Bearer "+g.config.Token)
 	}
-	logger.LogTrace(ctx, g.logger, "Sending GET request to %s...", assetURL)
-	resp, err := g.httpClient.Do(req)
+	logger.LogTrace(ctx, g.config.Logger, "Sending GET request to %s...", assetURL)
+	resp, err := g.config.HTTPClient.Do(req)
 	if err != nil {
-		logger.LogTrace(ctx, g.logger, "GET request to %s failed (%v)", assetURL, err)
+		logger.LogTrace(ctx, g.config.Logger, "GET request to %s failed (%v)", assetURL, err)
 		return nil, &vcs.RequestFailedError{
 			Cause: err,
 		}
@@ -293,7 +414,7 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	logger.LogTrace(ctx, g.logger, "GET request to %s returned status code %d", assetURL, resp.StatusCode)
+	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", assetURL, resp.StatusCode)
 	if resp.StatusCode != 200 {
 		err = InvalidStatusCodeError{resp.StatusCode}
 		if resp.StatusCode == 404 {
@@ -329,7 +450,7 @@ func (g github) HasPermission(ctx context.Context, username vcs.Username, organi
 	if err := username.Validate(); err != nil {
 		return false, err
 	}
-	logger.LogTrace(ctx, g.logger, "Checking if user %s has permissions for the organization %s...", username, organization)
+	logger.LogTrace(ctx, g.config.Logger, "Checking if user %s has permissions for the organization %s...", username, organization)
 	reqURL := "https://api.github.com/orgs/" + url.PathEscape(string(organization)) + "/members"
 	var response []memberType
 	if err := g.request(ctx, reqURL, &response); err != nil {

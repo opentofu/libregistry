@@ -4,6 +4,8 @@
 package fakevcs
 
 import (
+	"io/fs"
+
 	"github.com/opentofu/libregistry/vcs"
 )
 
@@ -20,7 +22,7 @@ type VCSClient interface {
 
 	CreateOrganization(organization vcs.OrganizationAddr) error
 	CreateRepository(repository vcs.RepositoryAddr) error
-	CreateVersion(repository vcs.RepositoryAddr, version vcs.Version) error
+	CreateVersion(repository vcs.RepositoryAddr, version vcs.Version, content fs.ReadDirFS) error
 	AddAsset(repository vcs.RepositoryAddr, version vcs.Version, name vcs.AssetName, data []byte) error
 	AddUser(username vcs.Username) error
 	AddMember(organization vcs.OrganizationAddr, username vcs.Username) error

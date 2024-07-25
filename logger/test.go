@@ -27,7 +27,7 @@ func (t testLogger) WithName(name string) Logger {
 	}
 }
 
-func (t testLogger) log(ctx context.Context, level string, message string, args ...any) {
+func (t testLogger) log(_ context.Context, level string, message string, args ...any) {
 	if t.prefix != "" {
 		t.t.Logf(t.prefix+level+"\t"+message, args...)
 	} else {

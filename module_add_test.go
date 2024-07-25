@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"os"
 	"testing"
 
@@ -20,7 +21,7 @@ import (
 )
 
 func ExampleAPI_AddModule() {
-	ghClient, err := github.New(os.Getenv("GITHUB_TOKEN"), nil, nil)
+	ghClient, err := github.New(github.WithToken(os.Getenv("GITHUB_TOKEN")))
 	if err != nil {
 		panic(err)
 	}
@@ -98,7 +99,7 @@ func TestAddModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := inMemoryVCS.CreateVersion(repo, "v1.0.0"); err != nil {
+	if err := inMemoryVCS.CreateVersion(repo, "v1.0.0", os.DirFS(t.TempDir()).(fs.ReadDirFS)); err != nil {
 		t.Fatal(err)
 	}
 

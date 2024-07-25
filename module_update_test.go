@@ -5,6 +5,8 @@ package libregistry_test
 
 import (
 	"context"
+	"io/fs"
+	"os"
 	"strconv"
 	"testing"
 
@@ -56,7 +58,7 @@ func TestUpdateModuleBackfill(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := inMemoryVCS.CreateVersion(repo, "v1.0.0"); err != nil {
+	if err := inMemoryVCS.CreateVersion(repo, "v1.0.0", os.DirFS(t.TempDir()).(fs.ReadDirFS)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -65,7 +67,7 @@ func TestUpdateModuleBackfill(t *testing.T) {
 	}
 
 	for i := 1; i <= createVersionCount; i++ {
-		if err := inMemoryVCS.CreateVersion(repo, vcs.Version("v1.0."+strconv.Itoa(i))); err != nil {
+		if err := inMemoryVCS.CreateVersion(repo, vcs.Version("v1.0."+strconv.Itoa(i)), os.DirFS(t.TempDir()).(fs.ReadDirFS)); err != nil {
 			t.Fatal(err)
 		}
 	}
