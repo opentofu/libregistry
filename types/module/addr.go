@@ -4,7 +4,9 @@
 package module
 
 import (
+	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/opentofu/libregistry/vcs"
 	regaddr "github.com/opentofu/registry-address"
@@ -29,6 +31,28 @@ func (a Addr) Validate() error {
 	return nil
 }
 
+func (a Addr) MarshalJSON() ([]byte, error) {
+	// Note: this intentionally doesn't have a pointer receiver! Don't add one!
+	normalized := a.Normalize()
+	//goland:noinspection GoRedundantConversion
+	return json.Marshal(string(normalized.Namespace + "/" + normalized.Name + "/" + normalized.TargetSystem))
+}
+
+func (a *Addr) UnmarshalJSON(b []byte) error {
+	var data string
+	if err := json.Unmarshal(b, &data); err != nil {
+		return err
+	}
+	parts := strings.Split(data, "/")
+	if len(parts) != 3 {
+		return fmt.Errorf("invalid module address: %s", data)
+	}
+	a.Namespace = parts[0]
+	a.Name = parts[1]
+	a.TargetSystem = parts[2]
+	return nil
+}
+
 func (a Addr) Normalize() Addr {
 	return NormalizeAddr(a)
 }
@@ -41,7 +65,7 @@ func (a Addr) String() string {
 func (a Addr) Equals(other Addr) bool {
 	current := a.Normalize()
 	other = other.Normalize()
-	return current.Namespace == other.Namespace && current.Name == other.Namespace && current.TargetSystem == other.TargetSystem
+	return current.Namespace == other.Namespace && current.Name == other.Name && current.TargetSystem == other.TargetSystem
 }
 
 func (a Addr) ToRepositoryAddr() vcs.RepositoryAddr {
