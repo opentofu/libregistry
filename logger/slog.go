@@ -5,6 +5,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 )
 
@@ -26,21 +27,21 @@ func (s slogLogger) WithName(name string) Logger {
 }
 
 func (s slogLogger) Trace(ctx context.Context, message string, args ...any) {
-	s.backingLogger.Log(ctx, -8, message, args...)
+	s.backingLogger.Log(ctx, -8, fmt.Sprintf(message, args...))
 }
 
 func (s slogLogger) Debug(ctx context.Context, message string, args ...any) {
-	s.backingLogger.Log(ctx, slog.LevelDebug, message, args...)
+	s.backingLogger.Log(ctx, slog.LevelDebug, fmt.Sprintf(message, args...))
 }
 
 func (s slogLogger) Info(ctx context.Context, message string, args ...any) {
-	s.backingLogger.Log(ctx, slog.LevelInfo, message, args...)
+	s.backingLogger.Log(ctx, slog.LevelInfo, fmt.Sprintf(message, args...))
 }
 
 func (s slogLogger) Warn(ctx context.Context, message string, args ...any) {
-	s.backingLogger.Log(ctx, slog.LevelWarn, message, args...)
+	s.backingLogger.Log(ctx, slog.LevelWarn, fmt.Sprintf(message, args...))
 }
 
 func (s slogLogger) Error(ctx context.Context, message string, args ...any) {
-	s.backingLogger.Log(ctx, slog.LevelError, message, args...)
+	s.backingLogger.Log(ctx, slog.LevelError, fmt.Sprintf(message, args...))
 }
