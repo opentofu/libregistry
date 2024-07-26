@@ -57,7 +57,7 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 	if err := version.Validate(); err != nil {
 		return nil, err
 	}
-	parentDirectory := path.Join(g.config.CheckoutRootDirectory, string(repository.Org), repository.Name)
+	parentDirectory := path.Join(g.config.CheckoutRootDirectory, string(repository.Org))
 	checkoutDirectory := path.Join(parentDirectory, repository.Name)
 	gitDirectory := path.Join(checkoutDirectory, ".git")
 
