@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/opentofu/libregistry/logger"
 )
@@ -89,6 +90,10 @@ func WithCheckoutRootDirectory(rootDir string) Opt {
 		}
 		if !stat.IsDir() {
 			return fmt.Errorf("unusable checkout root directory (not a directory)")
+		}
+		rootDir, err = filepath.Abs(rootDir)
+		if err != nil {
+			return fmt.Errorf("failed to determine absolute path for %s (%v)", rootDir, err)
 		}
 		config.CheckoutRootDirectory = rootDir
 		return nil
