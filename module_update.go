@@ -42,8 +42,12 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 	}
 	var newVersions module.VersionList
 	for _, tag := range tags {
+		ver, err := module.VersionFromVCS(tag)
+		if err != nil {
+			continue
+		}
 		newVersions = append(newVersions, module.Version{
-			Version: module.VersionNumber(tag),
+			Version: ver,
 		})
 	}
 	moduleMetadata.Versions = moduleMetadata.Versions.Merge(newVersions)
@@ -59,8 +63,12 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 		}
 		newVersions = nil
 		for _, tag := range tags {
+			ver, err := module.VersionFromVCS(tag)
+			if err != nil {
+				continue
+			}
 			newVersions = append(newVersions, module.Version{
-				Version: module.VersionNumber(tag),
+				Version: ver,
 			})
 		}
 		moduleMetadata.Versions = newVersions
