@@ -46,7 +46,7 @@ func (r InvalidAssetNameError) Unwrap() error {
 
 type AssetNotFoundError struct {
 	RepositoryAddr RepositoryAddr
-	Version        Version
+	Version        VersionNumber
 	Asset          AssetName
 	Cause          error
 }

@@ -26,8 +26,8 @@ func AddrFromRepository(repository vcs.RepositoryAddr) (Addr, error) {
 	}, nil
 }
 
-// VersionFromVCS converts a vcs.Version into a VersionNumber.
-func VersionFromVCS(vcsVersion vcs.Version) (VersionNumber, error) {
+// VersionFromVCS converts a vcs.VersionNumber into a VersionNumber.
+func VersionFromVCS(vcsVersion vcs.VersionNumber) (VersionNumber, error) {
 	ver := VersionNumber(vcsVersion)
 	return ver, ver.Validate()
 }

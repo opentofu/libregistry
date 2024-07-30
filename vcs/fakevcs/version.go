@@ -5,12 +5,14 @@ package fakevcs
 
 import (
 	"io/fs"
+	"time"
 
 	"github.com/opentofu/libregistry/vcs"
 )
 
 type version struct {
-	name     vcs.Version
+	name     vcs.VersionNumber
+	created  time.Time
 	assets   map[vcs.AssetName][]byte
 	contents fs.ReadDirFS
 }

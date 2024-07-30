@@ -25,16 +25,16 @@ func (r RepositoryAlreadyExistsError) Error() string {
 
 type VersionAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        vcs.Version
+	Version        vcs.VersionNumber
 }
 
 func (v VersionAlreadyExistsError) Error() string {
-	return "Version " + string(v.Version) + " already exists in repository " + v.RepositoryAddr.String()
+	return "VersionNumber " + string(v.Version) + " already exists in repository " + v.RepositoryAddr.String()
 }
 
 type AssetAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        vcs.Version
+	Version        vcs.VersionNumber
 	Asset          vcs.AssetName
 }
 

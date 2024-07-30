@@ -67,7 +67,7 @@ func TestUpdateModuleBackfill(t *testing.T) {
 	}
 
 	for i := 1; i <= createVersionCount; i++ {
-		if err := inMemoryVCS.CreateVersion(repo, vcs.Version("v1.0."+strconv.Itoa(i)), os.DirFS(t.TempDir()).(fs.ReadDirFS)); err != nil {
+		if err := inMemoryVCS.CreateVersion(repo, vcs.VersionNumber("v1.0."+strconv.Itoa(i)), os.DirFS(t.TempDir()).(fs.ReadDirFS)); err != nil {
 			t.Fatal(err)
 		}
 	}

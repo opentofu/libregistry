@@ -13,41 +13,37 @@ import (
 )
 
 type inMemoryVCS struct {
+	config        Config
 	users         map[vcs.Username]struct{}
 	organizations map[vcs.OrganizationAddr]*org
 }
 
-func (i *inMemoryVCS) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	return i.ListLatestTags(ctx, repository)
-}
+func (i *inMemoryVCS) GetRepositoryInfo(_ context.Context, repositoryAddr vcs.RepositoryAddr) (vcs.RepositoryInfo, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return vcs.RepositoryInfo{}, err
+	}
 
-func (i *inMemoryVCS) ListAllReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
-	return i.ListAllTags(ctx, repository)
-}
-
-func (i *inMemoryVCS) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
-	parts := strings.SplitN(ref, "/", 2)
-	if len(parts) != 2 {
-		return vcs.RepositoryAddr{}, &vcs.InvalidRepositoryAddrError{
-			RepositoryString: ref,
+	org, ok := i.organizations[repositoryAddr.Org]
+	if !ok {
+		return vcs.RepositoryInfo{}, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
 		}
 	}
-	addr := vcs.RepositoryAddr{
-		Org:  vcs.OrganizationAddr(parts[0]),
-		Name: parts[1],
+	repo, ok := org.repositories[repositoryAddr]
+	if !ok {
+		return vcs.RepositoryInfo{}, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
 	}
-	return addr, addr.Validate()
+
+	return repo.info, nil
 }
 
-func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
-	versions, err := i.ListAllTags(ctx, repositoryAddr)
-	if len(versions) > 5 {
-		versions = versions[:5]
-	}
-	return versions, err
+func (i *inMemoryVCS) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
+	return i.ListAllReleases(ctx, repository)
 }
 
-func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
+func (i *inMemoryVCS) ListAllReleases(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return nil, err
 	}
@@ -67,12 +63,62 @@ func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.Reposito
 
 	result := make([]vcs.Version, len(repo.versions))
 	for i, ver := range repo.versions {
+		result[i] = vcs.Version{
+			VersionNumber: ver.name,
+			Created:       ver.created,
+		}
+	}
+	return result, nil
+}
+
+func (i *inMemoryVCS) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
+	parts := strings.SplitN(ref, "/", 2)
+	if len(parts) != 2 {
+		return vcs.RepositoryAddr{}, &vcs.InvalidRepositoryAddrError{
+			RepositoryString: ref,
+		}
+	}
+	addr := vcs.RepositoryAddr{
+		Org:  vcs.OrganizationAddr(parts[0]),
+		Name: parts[1],
+	}
+	return addr, addr.Validate()
+}
+
+func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+	versions, err := i.ListAllTags(ctx, repositoryAddr)
+	if len(versions) > 5 {
+		versions = versions[:5]
+	}
+	return versions, err
+}
+
+func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return nil, err
+	}
+
+	org, ok := i.organizations[repositoryAddr.Org]
+	if !ok {
+		return nil, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+	repo, ok := org.repositories[repositoryAddr]
+	if !ok {
+		return nil, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+
+	result := make([]vcs.VersionNumber, len(repo.versions))
+	for i, ver := range repo.versions {
 		result[i] = ver.name
 	}
 	return result, nil
 }
 
-func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version) ([]vcs.AssetName, error) {
+func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.VersionNumber) ([]vcs.AssetName, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return nil, err
 	}
@@ -108,7 +154,7 @@ func (i *inMemoryVCS) ListAssets(_ context.Context, repositoryAddr vcs.Repositor
 	}
 }
 
-func (i *inMemoryVCS) DownloadAsset(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version, asset vcs.AssetName) ([]byte, error) {
+func (i *inMemoryVCS) DownloadAsset(_ context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.VersionNumber, asset vcs.AssetName) ([]byte, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return nil, err
 	}
@@ -175,7 +221,7 @@ func (i *inMemoryVCS) CreateOrganization(organization vcs.OrganizationAddr) erro
 	return nil
 }
 
-func (i *inMemoryVCS) CreateRepository(repositoryAddr vcs.RepositoryAddr) error {
+func (i *inMemoryVCS) CreateRepository(repositoryAddr vcs.RepositoryAddr, repositoryInfo vcs.RepositoryInfo) error {
 	if err := repositoryAddr.Validate(); err != nil {
 		return err
 	}
@@ -193,7 +239,7 @@ func (i *inMemoryVCS) CreateRepository(repositoryAddr vcs.RepositoryAddr) error 
 	return nil
 }
 
-func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version, contents fs.ReadDirFS) error {
+func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionName vcs.VersionNumber, contents fs.ReadDirFS) error {
 	if err := repositoryAddr.Validate(); err != nil {
 		return err
 	}
@@ -223,6 +269,7 @@ func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionNa
 	repo.versions = append([]version{
 		{
 			name:     versionName,
+			created:  i.config.TimeSource(),
 			assets:   map[vcs.AssetName][]byte{},
 			contents: contents,
 		},
@@ -230,7 +277,7 @@ func (i *inMemoryVCS) CreateVersion(repositoryAddr vcs.RepositoryAddr, versionNa
 	return nil
 }
 
-func (i *inMemoryVCS) AddAsset(repositoryAddr vcs.RepositoryAddr, versionName vcs.Version, assetName vcs.AssetName, assetData []byte) error {
+func (i *inMemoryVCS) AddAsset(repositoryAddr vcs.RepositoryAddr, versionName vcs.VersionNumber, assetName vcs.AssetName, assetData []byte) error {
 	if err := repositoryAddr.Validate(); err != nil {
 		return err
 	}
@@ -299,7 +346,7 @@ func (i *inMemoryVCS) AddMember(organizationAddr vcs.OrganizationAddr, username 
 	return nil
 }
 
-func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.Version) (vcs.WorkingCopy, error) {
+func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.WorkingCopy, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return nil, err
 	}

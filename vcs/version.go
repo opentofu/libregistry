@@ -5,16 +5,17 @@ package vcs
 
 import (
 	"regexp"
+	"time"
 )
 
-type Version string
+type VersionNumber string
 
 var versionRe = regexp.MustCompile("^[a-zA-Z0-9/._-]+$")
 
 const maxVersionLength = 255
 
 // Validate validates the version strings against the assumptions the registry makes about version numbers.
-func (v Version) Validate() error {
+func (v VersionNumber) Validate() error {
 	if len(v) > maxVersionLength {
 		return &InvalidVersionError{
 			Version: v,
@@ -28,12 +29,32 @@ func (v Version) Validate() error {
 	return nil
 }
 
-func (v Version) Equals(tag Version) bool {
+func (v VersionNumber) Equals(tag VersionNumber) bool {
 	return v == tag
 }
 
+type Version struct {
+	VersionNumber VersionNumber
+	Created       time.Time
+}
+
+func (v Version) Validate() error {
+	if err := v.VersionNumber.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (v Version) Equals(other Version) bool {
+	return v.VersionNumber.Equals(other.VersionNumber) && v.Created == other.Created
+}
+
+func (v Version) String() string {
+	return string(v.VersionNumber)
+}
+
 type InvalidVersionError struct {
-	Version Version
+	Version VersionNumber
 	Cause   error
 }
 
@@ -50,15 +71,15 @@ func (r InvalidVersionError) Unwrap() error {
 
 type VersionNotFoundError struct {
 	RepositoryAddr RepositoryAddr
-	Version        Version
+	Version        VersionNumber
 	Cause          error
 }
 
 func (v VersionNotFoundError) Error() string {
 	if v.Cause != nil {
-		return "Version " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String() + " (" + v.Cause.Error() + ")"
+		return "VersionNumber " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String() + " (" + v.Cause.Error() + ")"
 	}
-	return "Version " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String()
+	return "VersionNumber " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String()
 }
 
 func (v VersionNotFoundError) Unwrap() error {

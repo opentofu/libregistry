@@ -13,13 +13,23 @@ type Client interface {
 	// ParseRepositoryAddr parses the repository address from a string.
 	ParseRepositoryAddr(ref string) (RepositoryAddr, error)
 
+	GetRepositoryInfo(ctx context.Context, repository RepositoryAddr) (RepositoryInfo, error)
+
 	// ListLatestTags returns the last few tags in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllTags.
-	ListLatestTags(ctx context.Context, repository RepositoryAddr) ([]Version, error)
+	//
+	// Design note: this API only lists version numbers because the tags API may not return all data and fetching the
+	// version number can be quite costly. Instead, the caller should check out the repository and use it to query tag
+	// metadata.
+	ListLatestTags(ctx context.Context, repository RepositoryAddr) ([]VersionNumber, error)
 
 	// ListAllTags returns a list of all tags in the repository. Whenever possible, prefer
 	// ListLatestTags instead since this call may be heavily rate limited.
-	ListAllTags(ctx context.Context, repository RepositoryAddr) ([]Version, error)
+	//
+	// Design note: this API only lists version numbers because the tags API may not return all data and fetching the
+	// version number can be quite costly. Instead, the caller should check out the repository and use it to query tag
+	// metadata.
+	ListAllTags(ctx context.Context, repository RepositoryAddr) ([]VersionNumber, error)
 
 	// ListLatestReleases returns the last few releases in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllReleases.
@@ -30,10 +40,10 @@ type Client interface {
 	ListAllReleases(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
 	// ListAssets lists all binary assets for a release of a repository.
-	ListAssets(ctx context.Context, repository RepositoryAddr, version Version) ([]AssetName, error)
+	ListAssets(ctx context.Context, repository RepositoryAddr, version VersionNumber) ([]AssetName, error)
 
 	// DownloadAsset downloads a given asset from a release in a repository.
-	DownloadAsset(ctx context.Context, repository RepositoryAddr, version Version, asset AssetName) ([]byte, error)
+	DownloadAsset(ctx context.Context, repository RepositoryAddr, version VersionNumber, asset AssetName) ([]byte, error)
 
 	// HasPermission returns true if the user has permission to act on behalf of an organization.
 	HasPermission(ctx context.Context, username Username, organization OrganizationAddr) (bool, error)
@@ -44,7 +54,7 @@ type Client interface {
 	//
 	// Note that the implementation may limit the concurrent use of a repository to a single WorkingCopy at a time in
 	// order to adhere to any rate limits the VCS system may impose.
-	Checkout(ctx context.Context, repository RepositoryAddr, version Version) (WorkingCopy, error)
+	Checkout(ctx context.Context, repository RepositoryAddr, version VersionNumber) (WorkingCopy, error)
 }
 
 type WorkingCopy interface {
@@ -54,4 +64,8 @@ type WorkingCopy interface {
 	// This call may return an error if raw directory access is not supported.
 	RawDirectory() (string, error)
 	Close() error
+}
+
+type RepositoryInfo struct {
+	Description string `json:"description"`
 }
