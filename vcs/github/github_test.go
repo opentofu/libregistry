@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"os"
 	"testing"
 	"time"
 
@@ -23,6 +24,7 @@ func TestRepoInfo(t *testing.T) {
 
 	gh, err := github.New(
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatalf("❌ Failed to initialize Github client (%v)", err)
@@ -55,6 +57,7 @@ func TestReleases(t *testing.T) {
 
 	gh, err := github.New(
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatalf("❌ Failed to initialize Github client (%v)", err)
@@ -101,6 +104,7 @@ func TestTags(t *testing.T) {
 
 	gh, err := github.New(
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatalf("❌ Failed to initialize Github client (%v)", err)
@@ -141,6 +145,7 @@ func TestClone(t *testing.T) {
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -183,6 +188,7 @@ func TestCloneNotFound(t *testing.T) {
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -212,6 +218,7 @@ func TestURL(t *testing.T) {
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
 		github.WithLogger(logger.NewTestLogger(t)),
+		github.WithToken(os.Getenv("GITHUB_TOKEN")),
 	)
 	if err != nil {
 		t.Fatal(err)
