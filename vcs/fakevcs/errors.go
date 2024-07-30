@@ -25,7 +25,7 @@ func (r RepositoryAlreadyExistsError) Error() string {
 
 type VersionAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        vcs.Version
+	Version        vcs.VersionNumber
 }
 
 func (v VersionAlreadyExistsError) Error() string {
@@ -34,7 +34,7 @@ func (v VersionAlreadyExistsError) Error() string {
 
 type AssetAlreadyExistsError struct {
 	RepositoryAddr vcs.RepositoryAddr
-	Version        vcs.Version
+	Version        vcs.VersionNumber
 	Asset          vcs.AssetName
 }
 

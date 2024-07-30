@@ -4,6 +4,7 @@
 package github
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -20,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/vcs"
@@ -50,11 +52,55 @@ type github struct {
 	locks  map[string]*sync.Mutex
 }
 
-func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, version vcs.Version) (vcs.WorkingCopy, error) {
+func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.RepositoryAddr) (vcs.RepositoryInfo, error) {
 	if err := repository.Validate(); err != nil {
+		return vcs.RepositoryInfo{}, err
+	}
+	type repoInfoResponse struct {
+		Description string `json:"description"`
+	}
+
+	var response repoInfoResponse
+
+	if err := g.request(ctx, "https://api.github.com/repos/"+url.PathEscape(string(repository.Org))+"/"+url.PathEscape(repository.Name), &response); err != nil {
+		return vcs.RepositoryInfo{}, err
+	}
+	return vcs.RepositoryInfo{
+		Description: response.Description,
+	}, nil
+}
+
+func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.WorkingCopy, error) {
+	if err := version.Validate(); err != nil {
 		return nil, err
 	}
-	if err := version.Validate(); err != nil {
+	wc, err := g.getWorkingCopy(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+
+	tagExists, err := wc.tagExists(ctx, version)
+	if err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+	if !tagExists {
+		wc.cleanup()
+		return nil, &vcs.VersionNotFoundError{
+			RepositoryAddr: repository,
+			Version:        version,
+		}
+	}
+
+	if err := wc.checkout(ctx, version); err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+	return wc, nil
+}
+
+func (g github) getWorkingCopy(ctx context.Context, repository vcs.RepositoryAddr) (*workingCopy, error) {
+	if err := repository.Validate(); err != nil {
 		return nil, err
 	}
 	parentDirectory := path.Join(g.config.CheckoutRootDirectory, string(repository.Org))
@@ -101,8 +147,9 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		if g.config.Username != "" && g.config.Token != "" {
 			credentials = url.PathEscape(g.config.Username) + ":" + url.PathEscape(g.config.Token) + "@"
 		}
+
 		cloneURL := "https://" + credentials + "github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + ".git"
-		if err := g.git(ctx, parentDirectory, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
+		if err := g.git(ctx, parentDirectory, nil, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
 			cleanup()
 
 			// Clone failed, check if repository exists.
@@ -115,33 +162,26 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		}
 	}
 
-	if err := g.git(ctx, checkoutDirectory, "fetch", "--tags"); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	if err := g.git(ctx, checkoutDirectory, "checkout", string(version)); err != nil {
-		// Checkout failed, see if tag exists.
-		tagExists, e := g.tagExists(ctx, repository, version)
-		if e == nil && !tagExists {
-			return nil, &vcs.VersionNotFoundError{Version: version, RepositoryAddr: repository, Cause: err}
-		}
-
+	if err := g.git(ctx, checkoutDirectory, nil, "fetch", "--tags"); err != nil {
 		cleanup()
 		return nil, err
 	}
 
 	return &workingCopy{
-		ReadDirFS: os.DirFS(checkoutDirectory).(fs.ReadDirFS),
-		dir:       checkoutDirectory,
-		cleanup:   cleanup,
+		ReadDirFS:  os.DirFS(checkoutDirectory).(fs.ReadDirFS),
+		repository: repository,
+		dir:        checkoutDirectory,
+		cleanup:    cleanup,
+		g:          g,
 	}, nil
 }
 
 type workingCopy struct {
 	fs.ReadDirFS
-	cleanup func()
-	dir     string
+	cleanup    func()
+	repository vcs.RepositoryAddr
+	dir        string
+	g          github
 }
 
 func (w workingCopy) RawDirectory() (string, error) {
@@ -153,11 +193,75 @@ func (w workingCopy) Close() error {
 	return nil
 }
 
-func (g github) git(ctx context.Context, dir string, params ...string) error {
+func (w workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
+	if err := w.g.git(ctx, w.dir, nil, "checkout", string(version)); err != nil {
+		// Checkout failed, see if tag exists.
+		tagExists, e := w.tagExists(ctx, version)
+		if e == nil && !tagExists {
+			return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
+		}
+
+		return err
+	}
+	return nil
+}
+
+func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
+	tags, err := w.listTags(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, tag := range tags {
+		if tag.VersionNumber.Equals(version) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (w workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
+	stdout := &bytes.Buffer{}
+	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*"); err != nil {
+		return nil, err
+	}
+	lines := strings.Split(stdout.String(), "\n")
+	var result []vcs.Version
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("line does not contain enough parts to parse: %s", line)
+		}
+		tag := vcs.VersionNumber(strings.ReplaceAll(parts[0], "refs/tags/", ""))
+		unixTime, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse git output: %s (%v)", line, err)
+		}
+		created := time.Unix(int64(unixTime), 0)
+		ver := vcs.Version{
+			VersionNumber: tag,
+			Created:       created,
+		}
+		if err := ver.Validate(); err != nil {
+			w.g.config.Logger.Debug(ctx, "Skipping tag %s because it does not match the naming rules.", ver.VersionNumber)
+			continue
+		}
+		result = append(result, ver)
+	}
+	return result, nil
+}
+
+func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ...string) error {
 	cmd := exec.Command(g.config.GitPath, params...)
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
 	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)
-	cmd.Stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	if stdout == nil {
+		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	}
+	cmd.Stdout = stdout
 	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
 	cmd.Dir = dir
 	done := make(chan struct{})
@@ -205,8 +309,9 @@ func (g github) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error) {
 
 type rss struct {
 	Entry []struct {
-		ID    string `title:"id"`
-		Title string `xml:"title"`
+		ID      string `title:"id"`
+		Title   string `xml:"title"`
+		Updated string `xml:"updated"`
 	} `xml:"entry"`
 }
 
@@ -256,20 +361,34 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 
 	var result []vcs.Version
 	for _, entry := range response.Entry {
-		version := vcs.Version(entry.Title)
-		err = version.Validate()
-		if err != nil {
-			g.config.Logger.Debug(ctx, "Skipping invalid version %s when querying %s in repository %s", version, file, repository)
-		} else {
-			result = append(result, version)
+		versionNumber := vcs.VersionNumber(entry.Title)
+		if err = versionNumber.Validate(); err != nil {
+			g.config.Logger.Debug(ctx, "Skipping invalid version %s when querying %s in repository %s", versionNumber, file, repository)
+			continue
 		}
+		versionCreated, err := time.Parse(time.RFC3339, entry.Updated)
+		if err != nil {
+			g.config.Logger.Debug(ctx, "Skipping invalid creation version creation time %s when querying %s in repository %s", entry.Updated, file, repository)
+			continue
+		}
+
+		result = append(result, vcs.Version{
+			VersionNumber: versionNumber,
+			Created:       versionCreated,
+		})
 	}
 	return result, nil
 }
 
 func (g github) ListAllTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
 	logger.LogTrace(ctx, g.config.Logger, "Requesting all tags for repository %s...", repository)
-	return g.listAll(ctx, repository, "tag")
+
+	wc, err := g.getWorkingCopy(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+	defer wc.cleanup()
+	return wc.listTags(ctx)
 }
 
 func (g github) ListAllReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
@@ -279,7 +398,9 @@ func (g github) ListAllReleases(ctx context.Context, repository vcs.RepositoryAd
 
 func (g github) listAll(ctx context.Context, repository vcs.RepositoryAddr, itemType string) ([]vcs.Version, error) {
 	type responseItem struct {
-		Name vcs.Version `json:"name"`
+		Name vcs.VersionNumber `json:"name"`
+		// PublishedAt is only present for releases, not for tags.
+		PublishedAt string `json:"published_at,omitempty"`
 	}
 
 	if err := repository.Validate(); err != nil {
@@ -304,9 +425,20 @@ func (g github) listAll(ctx context.Context, repository vcs.RepositoryAddr, item
 		err := item.Name.Validate()
 		if err != nil {
 			g.config.Logger.Debug(ctx, "Skipping invalid %s %s in repository %s", itemType, item.Name, repository)
-		} else {
-			result = append(result, item.Name)
+			continue
 		}
+		created := time.Time{}
+		if item.PublishedAt != "" {
+			created, err = time.Parse(time.RFC3339, item.PublishedAt)
+			if err != nil {
+				g.config.Logger.Debug(ctx, "Skipping invalid %s creation date (%s) for %s in repository %s", itemType, item.PublishedAt, item.Name, repository)
+				continue
+			}
+		}
+		result = append(result, vcs.Version{
+			VersionNumber: item.Name,
+			Created:       created,
+		})
 	}
 	return result, nil
 }
@@ -351,7 +483,7 @@ func (g github) request(ctx context.Context, url string, response any) error {
 	return nil
 }
 
-func (g github) ListAssets(ctx context.Context, repository vcs.RepositoryAddr, version vcs.Version) ([]vcs.AssetName, error) {
+func (g github) ListAssets(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) ([]vcs.AssetName, error) {
 	logger.LogTrace(ctx, g.config.Logger, "Listing assets for repository %s version %s", repository, version)
 
 	type responseItem struct {
@@ -395,7 +527,7 @@ func (g github) ListAssets(ctx context.Context, repository vcs.RepositoryAddr, v
 	return result, nil
 }
 
-func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr, version vcs.Version, asset vcs.AssetName) ([]byte, error) {
+func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber, asset vcs.AssetName) ([]byte, error) {
 	if err := repository.Validate(); err != nil {
 		return nil, err
 	}
@@ -494,19 +626,6 @@ func (g github) repositoryExists(ctx context.Context, repositoryAddr vcs.Reposit
 		return false, err
 	}
 	return true, nil
-}
-
-func (g github) tagExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr, tag vcs.Version) (bool, error) {
-	tags, err := g.ListAllTags(ctx, repositoryAddr)
-	if err != nil {
-		return false, err
-	}
-	for _, t := range tags {
-		if t.Equals(tag) {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 type InvalidStatusCodeError struct {

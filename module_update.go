@@ -42,7 +42,7 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 	}
 	var newVersions module.VersionList
 	for _, tag := range tags {
-		ver, err := module.VersionFromVCS(tag)
+		ver, err := module.VersionFromVCS(tag.VersionNumber)
 		if err != nil {
 			continue
 		}
@@ -63,7 +63,7 @@ func (m api) UpdateModule(ctx context.Context, moduleAddr module.Addr) error {
 		}
 		newVersions = nil
 		for _, tag := range tags {
-			ver, err := module.VersionFromVCS(tag)
+			ver, err := module.VersionFromVCS(tag.VersionNumber)
 			if err != nil {
 				continue
 			}

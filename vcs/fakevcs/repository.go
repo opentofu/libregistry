@@ -3,6 +3,11 @@
 
 package fakevcs
 
+import (
+	"github.com/opentofu/libregistry/vcs"
+)
+
 type repository struct {
 	versions []version
+	info     vcs.RepositoryInfo
 }
