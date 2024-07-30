@@ -79,6 +79,19 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		return nil, err
 	}
 
+	tagExists, err := wc.tagExists(ctx, version)
+	if err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+	if !tagExists {
+		wc.cleanup()
+		return nil, &vcs.VersionNotFoundError{
+			RepositoryAddr: repository,
+			Version:        version,
+		}
+	}
+
 	if err := wc.checkout(ctx, version); err != nil {
 		wc.cleanup()
 		return nil, err
@@ -613,19 +626,6 @@ func (g github) repositoryExists(ctx context.Context, repositoryAddr vcs.Reposit
 		return false, err
 	}
 	return true, nil
-}
-
-func (g github) tagExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr, tag vcs.VersionNumber) (bool, error) {
-	tags, err := g.ListAllTags(ctx, repositoryAddr)
-	if err != nil {
-		return false, err
-	}
-	for _, t := range tags {
-		if t.VersionNumber.Equals(tag) {
-			return true, nil
-		}
-	}
-	return false, nil
 }
 
 type InvalidStatusCodeError struct {
