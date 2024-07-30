@@ -52,6 +52,56 @@ type github struct {
 	locks  map[string]*sync.Mutex
 }
 
+func (g github) GetTagVersion(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.Version, error) {
+	if err := repository.Validate(); err != nil {
+		return vcs.Version{}, err
+	}
+	if err := version.Validate(); err != nil {
+		return vcs.Version{}, err
+	}
+
+	wc, err := g.getWorkingCopy(ctx, repository)
+	if err != nil {
+		return vcs.Version{}, nil
+	}
+	defer wc.cleanup()
+	return wc.getTag(ctx, version)
+}
+
+func (g github) GetRepositoryBrowseURL(_ context.Context, repository vcs.RepositoryAddr) (string, error) {
+	if err := repository.Validate(); err != nil {
+		return "", err
+	}
+	return "https://github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name), nil
+}
+
+func (g github) GetVersionBrowseURL(_ context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (string, error) {
+	if err := repository.Validate(); err != nil {
+		return "", err
+	}
+	if err := version.Validate(); err != nil {
+		return "", err
+	}
+	return "https://github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + "/tree/" + url.PathEscape(string(version)), nil
+}
+
+func (g github) GetFileViewURL(_ context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber, file string) (string, error) {
+	if err := repository.Validate(); err != nil {
+		return "", err
+	}
+	if err := version.Validate(); err != nil {
+		return "", err
+	}
+	if file == "" {
+		return "", fmt.Errorf("empty file name passed")
+	}
+	fileParts := strings.Split(file, "/")
+	for i, part := range fileParts {
+		fileParts[i] = url.PathEscape(part)
+	}
+	return "https://github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + "/blob/" + url.PathEscape(string(version)) + "/" + file, nil
+}
+
 func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.RepositoryAddr) (vcs.RepositoryInfo, error) {
 	if err := repository.Validate(); err != nil {
 		return vcs.RepositoryInfo{}, err
@@ -217,6 +267,22 @@ func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (
 		}
 	}
 	return false, nil
+}
+
+func (w workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Version, error) {
+	tags, err := w.listTags(ctx)
+	if err != nil {
+		return vcs.Version{}, err
+	}
+	for _, t := range tags {
+		if t.VersionNumber.Equals(tag) {
+			return t, nil
+		}
+	}
+	return vcs.Version{}, vcs.VersionNotFoundError{
+		RepositoryAddr: w.repository,
+		Version:        tag,
+	}
 }
 
 func (w workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {

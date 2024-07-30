@@ -14,3 +14,10 @@ func (r RequestFailedError) Error() string {
 func (r RequestFailedError) Unwrap() error {
 	return r.Cause
 }
+
+type NoWebAccessError struct {
+}
+
+func (r NoWebAccessError) Error() string {
+	return "The VCS system does not support web access."
+}

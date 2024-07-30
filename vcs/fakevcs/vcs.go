@@ -18,6 +18,50 @@ type inMemoryVCS struct {
 	organizations map[vcs.OrganizationAddr]*org
 }
 
+func (i *inMemoryVCS) GetTagVersion(ctx context.Context, repositoryAddr vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.Version, error) {
+	if err := repositoryAddr.Validate(); err != nil {
+		return vcs.Version{}, err
+	}
+
+	org, ok := i.organizations[repositoryAddr.Org]
+	if !ok {
+		return vcs.Version{}, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+	repo, ok := org.repositories[repositoryAddr]
+	if !ok {
+		return vcs.Version{}, &vcs.RepositoryNotFoundError{
+			RepositoryAddr: repositoryAddr,
+		}
+	}
+
+	for _, ver := range repo.versions {
+		if ver.name.Equals(version) {
+			return vcs.Version{
+				VersionNumber: ver.name,
+				Created:       ver.created,
+			}, nil
+		}
+	}
+	return vcs.Version{}, &vcs.VersionNotFoundError{
+		RepositoryAddr: repositoryAddr,
+		Version:        version,
+	}
+}
+
+func (i *inMemoryVCS) GetRepositoryBrowseURL(ctx context.Context, repository vcs.RepositoryAddr) (string, error) {
+	return "", &vcs.NoWebAccessError{}
+}
+
+func (i *inMemoryVCS) GetVersionBrowseURL(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (string, error) {
+	return "", &vcs.NoWebAccessError{}
+}
+
+func (i *inMemoryVCS) GetFileViewURL(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber, file string) (string, error) {
+	return "", &vcs.NoWebAccessError{}
+}
+
 func (i *inMemoryVCS) GetRepositoryInfo(_ context.Context, repositoryAddr vcs.RepositoryAddr) (vcs.RepositoryInfo, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return vcs.RepositoryInfo{}, err

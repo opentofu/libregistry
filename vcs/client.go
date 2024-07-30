@@ -29,6 +29,12 @@ type Client interface {
 	// Do not call this function while you have a working copy checked out!
 	ListAllTags(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
+	// GetTagVersion returns the full version information for a tag.
+	//
+	// Caution! This function MAY perform a checkout, which may place an exclusive lock on the checkout directory.
+	// Do not call this function while you have a working copy checked out!
+	GetTagVersion(ctx context.Context, repository RepositoryAddr, version VersionNumber) (Version, error)
+
 	// ListLatestReleases returns the last few releases in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllReleases.
 	//
@@ -59,6 +65,19 @@ type Client interface {
 	// Note that the implementation may limit the concurrent use of a repository to a single WorkingCopy at a time in
 	// order to adhere to any rate limits the VCS system may impose.
 	Checkout(ctx context.Context, repository RepositoryAddr, version VersionNumber) (WorkingCopy, error)
+
+	// GetRepositoryBrowseURL returns the web address the repository can be viewed at. The implementation may return
+	// a *NoWebAccessError if the VCS system does not support accessing files via the web.
+	GetRepositoryBrowseURL(ctx context.Context, repository RepositoryAddr) (string, error)
+
+	// GetVersionBrowseURL returns the web address a specific version can be viewed at. The implementation may return
+	// a *NoWebAccessError if the VCS system does not support accessing files via the web.
+	GetVersionBrowseURL(ctx context.Context, repository RepositoryAddr, version VersionNumber) (string, error)
+
+	// GetFileViewURL determines the URL a file in a specific version can be viewed at. The existence of the file in
+	// the version is not verified. The implementation may return a *NoWebAccessError if the VCS system does not support
+	// accessing files via the web.
+	GetFileViewURL(ctx context.Context, repository RepositoryAddr, version VersionNumber, file string) (string, error)
 }
 
 type WorkingCopy interface {

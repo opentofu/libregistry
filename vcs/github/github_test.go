@@ -200,3 +200,48 @@ func TestCloneNotFound(t *testing.T) {
 	}
 	t.Logf("✅ The cloning returned the correct error type for a non-existent repository.")
 }
+
+func TestURL(t *testing.T) {
+	t.Logf("⚙️ Checking if the GitHub abstraction returns the correct URLs...")
+	const testOrg = "opentofu"
+	const testRepo = "opentofu"
+	const testVersion = "v1.6.0"
+	const testFile = "README.md"
+
+	checkoutDir := t.TempDir()
+	gh, err := github.New(
+		github.WithCheckoutRootDirectory(checkoutDir),
+		github.WithLogger(logger.NewTestLogger(t)),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+
+	repoURL, err := gh.GetRepositoryBrowseURL(ctx, vcs.RepositoryAddr{Org: testOrg, Name: testRepo})
+	if err != nil {
+		t.Fatalf("❌ Querying the repo browse URL returned an error (%v)", err)
+	}
+	if repoURL != "https://github.com/opentofu/opentofu" {
+		t.Fatalf("❌ Querying the repo browse URL returned the incorrect URL: %s", repoURL)
+	}
+	t.Logf("✅ The repo browse URL is correct: %s", repoURL)
+
+	versionURL, err := gh.GetVersionBrowseURL(ctx, vcs.RepositoryAddr{Org: testOrg, Name: testRepo}, testVersion)
+	if err != nil {
+		t.Fatalf("❌ Querying the repo browse URL returned an error (%v)", err)
+	}
+	if versionURL != "https://github.com/opentofu/opentofu/tree/v1.6.0" {
+		t.Fatalf("❌ Querying the version browse URL returned the incorrect URL: %s", versionURL)
+	}
+	t.Logf("✅ The version browse URL is correct: %s", versionURL)
+
+	fileURL, err := gh.GetFileViewURL(ctx, vcs.RepositoryAddr{Org: testOrg, Name: testRepo}, testVersion, testFile)
+	if err != nil {
+		t.Fatalf("❌ Querying the repo view URL returned an error (%v)", err)
+	}
+	if fileURL != "https://github.com/opentofu/opentofu/blob/v1.6.0/README.md" {
+		t.Fatalf("❌ Querying the file view URL returned the incorrect URL: %s", fileURL)
+	}
+	t.Logf("✅ The file view URL is correct: %s", fileURL)
+}
