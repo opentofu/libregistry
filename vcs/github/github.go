@@ -495,6 +495,7 @@ func (g github) repositoryExists(ctx context.Context, repositoryAddr vcs.Reposit
 	}
 	return true, nil
 }
+
 func (g github) tagExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr, tag vcs.Version) (bool, error) {
 	tags, err := g.ListAllTags(ctx, repositoryAddr)
 	if err != nil {
