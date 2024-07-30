@@ -54,7 +54,7 @@ func TestUpdateModuleBackfill(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := inMemoryVCS.CreateRepository(repo); err != nil {
+	if err := inMemoryVCS.CreateRepository(repo, vcs.RepositoryInfo{}); err != nil {
 		t.Fatal(err)
 	}
 
