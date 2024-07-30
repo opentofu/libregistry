@@ -29,7 +29,7 @@ type VersionAlreadyExistsError struct {
 }
 
 func (v VersionAlreadyExistsError) Error() string {
-	return "VersionNumber " + string(v.Version) + " already exists in repository " + v.RepositoryAddr.String()
+	return "Version " + string(v.Version) + " already exists in repository " + v.RepositoryAddr.String()
 }
 
 type AssetAlreadyExistsError struct {

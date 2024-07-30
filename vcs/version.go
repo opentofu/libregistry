@@ -77,9 +77,9 @@ type VersionNotFoundError struct {
 
 func (v VersionNotFoundError) Error() string {
 	if v.Cause != nil {
-		return "VersionNumber " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String() + " (" + v.Cause.Error() + ")"
+		return "Version " + string(v.Version) + " not found in repository" + v.RepositoryAddr.String() + " (" + v.Cause.Error() + ")"
 	}
-	return "VersionNumber " + string(v.Version) + " not found: in repository" + v.RepositoryAddr.String()
+	return "Version " + string(v.Version) + " not found in repository" + v.RepositoryAddr.String()
 }
 
 func (v VersionNotFoundError) Unwrap() error {
