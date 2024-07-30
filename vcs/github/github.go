@@ -534,8 +534,10 @@ func (g github) request(ctx context.Context, url string, response any) error {
 	}()
 	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", url, resp.StatusCode)
 	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
 		return &vcs.RequestFailedError{
 			Cause: &InvalidStatusCodeError{resp.StatusCode},
+			Body:  body,
 		}
 	}
 
@@ -629,7 +631,7 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 	}()
 	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", assetURL, resp.StatusCode)
 	if resp.StatusCode != 200 {
-		err = InvalidStatusCodeError{resp.StatusCode}
+		err = &InvalidStatusCodeError{resp.StatusCode}
 		if resp.StatusCode == 404 {
 			return nil, &vcs.AssetNotFoundError{
 				RepositoryAddr: repository,
