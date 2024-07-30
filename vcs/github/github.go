@@ -412,8 +412,10 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 		_ = resp.Body.Close()
 	}()
 	if resp.StatusCode != 200 {
+		body, _ := io.ReadAll(resp.Body)
 		return nil, &vcs.RequestFailedError{
 			Cause: fmt.Errorf("invalid status code: %d", resp.StatusCode),
+			Body:  body,
 		}
 	}
 
