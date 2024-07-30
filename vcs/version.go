@@ -28,6 +28,10 @@ func (v Version) Validate() error {
 	return nil
 }
 
+func (v Version) Equals(tag Version) bool {
+	return v == tag
+}
+
 type InvalidVersionError struct {
 	Version Version
 	Cause   error

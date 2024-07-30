@@ -104,6 +104,13 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		cloneURL := "https://" + credentials + "github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + ".git"
 		if err := g.git(ctx, parentDirectory, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
 			cleanup()
+
+			// Clone failed, check if repository exists.
+			repoExists, e := g.repositoryExists(ctx, repository)
+			if e == nil && !repoExists {
+				return nil, &vcs.RepositoryNotFoundError{RepositoryAddr: repository, Cause: err}
+			}
+
 			return nil, err
 		}
 	}
@@ -114,6 +121,12 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 	}
 
 	if err := g.git(ctx, checkoutDirectory, "checkout", string(version)); err != nil {
+		// Checkout failed, see if tag exists.
+		tagExists, e := g.tagExists(ctx, repository, version)
+		if e == nil && !tagExists {
+			return nil, &vcs.VersionNotFoundError{Version: version, RepositoryAddr: repository, Cause: err}
+		}
+
 		cleanup()
 		return nil, err
 	}
@@ -465,6 +478,31 @@ func (g github) HasPermission(ctx context.Context, username vcs.Username, organi
 	}
 	for _, member := range response {
 		if strings.EqualFold(member.Login, string(username)) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (g github) repositoryExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr) (bool, error) {
+	var repoResponse any
+	if err := g.request(ctx, "https://github.com/repos/"+url.PathEscape(string(repositoryAddr.Org))+"/"+url.PathEscape(repositoryAddr.Name), &repoResponse); err != nil {
+		var statusCodeError *InvalidStatusCodeError
+		if errors.As(err, &statusCodeError) && statusCodeError.StatusCode == http.StatusNotFound {
+			return false, nil
+		}
+		return false, err
+	}
+	return true, nil
+}
+
+func (g github) tagExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr, tag vcs.Version) (bool, error) {
+	tags, err := g.ListAllTags(ctx, repositoryAddr)
+	if err != nil {
+		return false, err
+	}
+	for _, t := range tags {
+		if t.Equals(tag) {
 			return true, nil
 		}
 	}
