@@ -85,7 +85,7 @@ func (i *inMemoryVCS) ParseRepositoryAddr(ref string) (vcs.RepositoryAddr, error
 	return addr, addr.Validate()
 }
 
-func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
 	versions, err := i.ListAllTags(ctx, repositoryAddr)
 	if len(versions) > 5 {
 		versions = versions[:5]
@@ -93,7 +93,7 @@ func (i *inMemoryVCS) ListLatestTags(ctx context.Context, repositoryAddr vcs.Rep
 	return versions, err
 }
 
-func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.RepositoryAddr) ([]vcs.Version, error) {
 	if err := repositoryAddr.Validate(); err != nil {
 		return nil, err
 	}
@@ -111,9 +111,12 @@ func (i *inMemoryVCS) ListAllTags(_ context.Context, repositoryAddr vcs.Reposito
 		}
 	}
 
-	result := make([]vcs.VersionNumber, len(repo.versions))
+	result := make([]vcs.Version, len(repo.versions))
 	for i, ver := range repo.versions {
-		result[i] = ver.name
+		result[i] = vcs.Version{
+			VersionNumber: ver.name,
+			Created:       ver.created,
+		}
 	}
 	return result, nil
 }

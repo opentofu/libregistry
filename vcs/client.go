@@ -18,25 +18,29 @@ type Client interface {
 	// ListLatestTags returns the last few tags in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllTags.
 	//
-	// Design note: this API only lists version numbers because the tags API may not return all data and fetching the
-	// version number can be quite costly. Instead, the caller should check out the repository and use it to query tag
-	// metadata.
-	ListLatestTags(ctx context.Context, repository RepositoryAddr) ([]VersionNumber, error)
+	// Caution! This function MAY perform a checkout, which may place an exclusive lock on the checkout directory.
+	// Do not call this function while you have a working copy checked out!
+	ListLatestTags(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
 	// ListAllTags returns a list of all tags in the repository. Whenever possible, prefer
 	// ListLatestTags instead since this call may be heavily rate limited.
 	//
-	// Design note: this API only lists version numbers because the tags API may not return all data and fetching the
-	// version number can be quite costly. Instead, the caller should check out the repository and use it to query tag
-	// metadata.
-	ListAllTags(ctx context.Context, repository RepositoryAddr) ([]VersionNumber, error)
+	// Caution! This function MAY perform a checkout, which may place an exclusive lock on the checkout directory.
+	// Do not call this function while you have a working copy checked out!
+	ListAllTags(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
 	// ListLatestReleases returns the last few releases in the VCS system. This is a lightweight call and
 	// may need to be supplemented by a call to ListAllReleases.
+	//
+	// Caution! This function MAY perform a checkout, which may place an exclusive lock on the checkout directory.
+	// Do not call this function while you have a working copy checked out!
 	ListLatestReleases(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
 	// ListAllReleases returns a list of all releases in the repository. Whenever possible, prefer
 	// ListLatestReleases instead since this call may be heavily rate limited.
+	//
+	// Caution! This function MAY perform a checkout, which may place an exclusive lock on the checkout directory.
+	// Do not call this function while you have a working copy checked out!
 	ListAllReleases(ctx context.Context, repository RepositoryAddr) ([]Version, error)
 
 	// ListAssets lists all binary assets for a release of a repository.

@@ -4,6 +4,7 @@
 package github
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"encoding/xml"
@@ -70,10 +71,23 @@ func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.Repository
 }
 
 func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.WorkingCopy, error) {
-	if err := repository.Validate(); err != nil {
+	if err := version.Validate(); err != nil {
 		return nil, err
 	}
-	if err := version.Validate(); err != nil {
+	wc, err := g.getWorkingCopy(ctx, repository)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := wc.checkout(ctx, version); err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+	return wc, nil
+}
+
+func (g github) getWorkingCopy(ctx context.Context, repository vcs.RepositoryAddr) (*workingCopy, error) {
+	if err := repository.Validate(); err != nil {
 		return nil, err
 	}
 	parentDirectory := path.Join(g.config.CheckoutRootDirectory, string(repository.Org))
@@ -120,8 +134,9 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		if g.config.Username != "" && g.config.Token != "" {
 			credentials = url.PathEscape(g.config.Username) + ":" + url.PathEscape(g.config.Token) + "@"
 		}
+
 		cloneURL := "https://" + credentials + "github.com/" + url.PathEscape(string(repository.Org)) + "/" + url.PathEscape(repository.Name) + ".git"
-		if err := g.git(ctx, parentDirectory, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
+		if err := g.git(ctx, parentDirectory, nil, "clone", "--depth", "1", cloneURL, checkoutDirectory); err != nil {
 			cleanup()
 
 			// Clone failed, check if repository exists.
@@ -134,33 +149,26 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		}
 	}
 
-	if err := g.git(ctx, checkoutDirectory, "fetch", "--tags"); err != nil {
-		cleanup()
-		return nil, err
-	}
-
-	if err := g.git(ctx, checkoutDirectory, "checkout", string(version)); err != nil {
-		// Checkout failed, see if tag exists.
-		tagExists, e := g.tagExists(ctx, repository, version)
-		if e == nil && !tagExists {
-			return nil, &vcs.VersionNotFoundError{Version: version, RepositoryAddr: repository, Cause: err}
-		}
-
+	if err := g.git(ctx, checkoutDirectory, nil, "fetch", "--tags"); err != nil {
 		cleanup()
 		return nil, err
 	}
 
 	return &workingCopy{
-		ReadDirFS: os.DirFS(checkoutDirectory).(fs.ReadDirFS),
-		dir:       checkoutDirectory,
-		cleanup:   cleanup,
+		ReadDirFS:  os.DirFS(checkoutDirectory).(fs.ReadDirFS),
+		repository: repository,
+		dir:        checkoutDirectory,
+		cleanup:    cleanup,
+		g:          g,
 	}, nil
 }
 
 type workingCopy struct {
 	fs.ReadDirFS
-	cleanup func()
-	dir     string
+	cleanup    func()
+	repository vcs.RepositoryAddr
+	dir        string
+	g          github
 }
 
 func (w workingCopy) RawDirectory() (string, error) {
@@ -172,11 +180,75 @@ func (w workingCopy) Close() error {
 	return nil
 }
 
-func (g github) git(ctx context.Context, dir string, params ...string) error {
+func (w workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
+	if err := w.g.git(ctx, w.dir, nil, "checkout", string(version)); err != nil {
+		// Checkout failed, see if tag exists.
+		tagExists, e := w.tagExists(ctx, version)
+		if e == nil && !tagExists {
+			return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
+		}
+
+		return err
+	}
+	return nil
+}
+
+func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
+	tags, err := w.listTags(ctx)
+	if err != nil {
+		return false, err
+	}
+	for _, tag := range tags {
+		if tag.VersionNumber.Equals(version) {
+			return true, nil
+		}
+	}
+	return false, nil
+}
+
+func (w workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
+	stdout := &bytes.Buffer{}
+	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*"); err != nil {
+		return nil, err
+	}
+	lines := strings.Split(stdout.String(), "\n")
+	var result []vcs.Version
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		parts := strings.SplitN(line, "\t", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("line does not contain enough parts to parse: %s", line)
+		}
+		tag := vcs.VersionNumber(strings.ReplaceAll(parts[0], "refs/tags/", ""))
+		unixTime, err := strconv.Atoi(parts[1])
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse git output: %s (%v)", line, err)
+		}
+		created := time.Unix(int64(unixTime), 0)
+		ver := vcs.Version{
+			VersionNumber: tag,
+			Created:       created,
+		}
+		if err := ver.Validate(); err != nil {
+			w.g.config.Logger.Debug(ctx, "Skipping tag %s because it does not match the naming rules.", ver.VersionNumber)
+			continue
+		}
+		result = append(result, ver)
+	}
+	return result, nil
+}
+
+func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ...string) error {
 	cmd := exec.Command(g.config.GitPath, params...)
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
 	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)
-	cmd.Stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	if stdout == nil {
+		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	}
+	cmd.Stdout = stdout
 	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
 	cmd.Dir = dir
 	done := make(chan struct{})
@@ -230,17 +302,9 @@ type rss struct {
 	} `xml:"entry"`
 }
 
-func (g github) ListLatestTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+func (g github) ListLatestTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
 	logger.LogTrace(ctx, g.config.Logger, "Requesting latest tags for repository %s...", repository)
-	tags, err := g.listLatest(ctx, repository, "tags.atom")
-	if err != nil {
-		return nil, err
-	}
-	result := make([]vcs.VersionNumber, len(tags))
-	for i, tag := range tags {
-		result[i] = tag.VersionNumber
-	}
-	return result, nil
+	return g.listLatest(ctx, repository, "tags.atom")
 }
 
 func (g github) ListLatestReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
@@ -303,17 +367,15 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 	return result, nil
 }
 
-func (g github) ListAllTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.VersionNumber, error) {
+func (g github) ListAllTags(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
 	logger.LogTrace(ctx, g.config.Logger, "Requesting all tags for repository %s...", repository)
-	tags, err := g.listAll(ctx, repository, "tag")
+
+	wc, err := g.getWorkingCopy(ctx, repository)
 	if err != nil {
 		return nil, err
 	}
-	result := make([]vcs.VersionNumber, len(tags))
-	for i, tag := range tags {
-		result[i] = tag.VersionNumber
-	}
-	return result, nil
+	defer wc.cleanup()
+	return wc.listTags(ctx)
 }
 
 func (g github) ListAllReleases(ctx context.Context, repository vcs.RepositoryAddr) ([]vcs.Version, error) {
@@ -559,7 +621,7 @@ func (g github) tagExists(ctx context.Context, repositoryAddr vcs.RepositoryAddr
 		return false, err
 	}
 	for _, t := range tags {
-		if t.Equals(tag) {
+		if t.VersionNumber.Equals(tag) {
 			return true, nil
 		}
 	}

@@ -88,6 +88,49 @@ func TestReleases(t *testing.T) {
 	t.Logf("✅ Found version %s with release date %s.", testVersion, testDate.String())
 }
 
+func TestTags(t *testing.T) {
+	const testOrg = "integrations"
+	const testRepo = "terraform-provider-github"
+	const testVersion = "v6.2.3"
+	testDate, err := time.Parse(time.RFC3339, "2024-07-08T16:55:36Z")
+	if err != nil {
+		t.Fatalf("❌ Failed to parse test date (%v)", err)
+	}
+
+	t.Logf("⚙️ Checking if version %s is present in %s/%s and was released on %s...", testVersion, testOrg, testRepo, testDate.String())
+
+	gh, err := github.New(
+		github.WithLogger(logger.NewTestLogger(t)),
+	)
+	if err != nil {
+		t.Fatalf("❌ Failed to initialize Github client (%v)", err)
+	}
+	ctx := context.Background()
+
+	tags, err := gh.ListAllTags(ctx, vcs.RepositoryAddr{
+		Org:  testOrg,
+		Name: testRepo,
+	})
+	if err != nil {
+		t.Fatalf("❌ Failed to list GitHub tags (%v)", err)
+	}
+	for _, tag := range tags {
+		if tag.VersionNumber.Equals(testVersion) {
+			if !tag.Created.Equal(testDate) {
+				t.Fatalf(
+					"❌ Found version %s, but the tag date is incorrect: %s (expected: %s)",
+					testVersion,
+					tag.Created.UTC().String(),
+					testDate.UTC().String(),
+				)
+			}
+			t.Logf("✅ Found version %s with tag date %s.", testVersion, tag.Created.String())
+			return
+		}
+	}
+	t.Fatalf("❌ Expected version not found (%s)", testVersion)
+}
+
 func TestClone(t *testing.T) {
 	const testOrg = "integrations"
 	const testRepo = "terraform-provider-github"
