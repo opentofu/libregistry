@@ -32,7 +32,7 @@ func (a *Addr) UnmarshalJSON(b []byte) error {
 	}
 	parts := strings.Split(data, "/")
 	if len(parts) != 2 {
-		return fmt.Errorf("invalid module address: %s", data)
+		return fmt.Errorf("invalid provider address: %s", data)
 	}
 	a.Namespace = parts[0]
 	a.Name = parts[1]
