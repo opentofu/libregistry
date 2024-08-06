@@ -240,20 +240,33 @@ type workingCopy struct {
 	fs.ReadDirFS
 	cleanup    func()
 	repository vcs.RepositoryAddr
+	version    vcs.VersionNumber
 	dir        string
 	g          github
 }
 
-func (w workingCopy) RawDirectory() (string, error) {
+func (w *workingCopy) Repository() vcs.RepositoryAddr {
+	return w.repository
+}
+
+func (w *workingCopy) Version() vcs.VersionNumber {
+	return w.version
+}
+
+func (w *workingCopy) Client() vcs.Client {
+	return w.g
+}
+
+func (w *workingCopy) RawDirectory() (string, error) {
 	return w.dir, nil
 }
 
-func (w workingCopy) Close() error {
+func (w *workingCopy) Close() error {
 	w.cleanup()
 	return nil
 }
 
-func (w workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
+func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
 	if err := w.g.git(ctx, w.dir, nil, "checkout", string(version)); err != nil {
 		// Checkout failed, see if tag exists.
 		tagExists, e := w.tagExists(ctx, version)
@@ -263,18 +276,19 @@ func (w workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) er
 
 		return err
 	}
+	w.version = version
 	return nil
 }
 
-func (w workingCopy) reset(ctx context.Context) error {
+func (w *workingCopy) reset(ctx context.Context) error {
 	return w.g.git(ctx, w.dir, nil, "reset", "--hard")
 }
 
-func (w workingCopy) clean(ctx context.Context) error {
+func (w *workingCopy) clean(ctx context.Context) error {
 	return w.g.git(ctx, w.dir, nil, "clean", "-fd")
 }
 
-func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
+func (w *workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
 	tags, err := w.listTags(ctx)
 	if err != nil {
 		return false, err
@@ -287,7 +301,7 @@ func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (
 	return false, nil
 }
 
-func (w workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Version, error) {
+func (w *workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Version, error) {
 	tags, err := w.listTags(ctx)
 	if err != nil {
 		return vcs.Version{}, err
@@ -303,7 +317,7 @@ func (w workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Ver
 	}
 }
 
-func (w workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
+func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 	stdout := &bytes.Buffer{}
 	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*"); err != nil {
 		return nil, err
