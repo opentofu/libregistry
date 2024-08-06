@@ -222,7 +222,7 @@ func (g github) getWorkingCopy(ctx context.Context, repository vcs.RepositoryAdd
 		}
 	}
 
-	if err := g.git(ctx, checkoutDirectory, nil, "fetch", "--tags"); err != nil {
+	if err := g.git(ctx, checkoutDirectory, nil, "fetch", "--tags", "--force"); err != nil {
 		cleanup()
 		return nil, err
 	}
