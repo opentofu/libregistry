@@ -12,7 +12,7 @@ import (
 func (r registryDataAPI) ListProviderNamespaceAliases(_ context.Context) (map[string]string, error) {
 	// TODO: move this to a JSON file.
 	return map[string]string{
-		"opentofu": "hashicorp",
+		"hashicorp": "opentofu",
 	}, nil
 }
 
