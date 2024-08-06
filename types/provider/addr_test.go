@@ -27,6 +27,6 @@ func TestAddrJSON(t *testing.T) {
 		t.Fatalf("Failed to unmarshal provider address (%v)", err)
 	}
 	if !providerAddr.Equals(providerAddr2) {
-		t.Fatalf("Module addresses are not equal.")
+		t.Fatalf("Provider addresses are not equal.")
 	}
 }
