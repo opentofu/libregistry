@@ -142,6 +142,16 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 		}
 	}
 
+	if err := wc.reset(ctx); err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+
+	if err := wc.clean(ctx); err != nil {
+		wc.cleanup()
+		return nil, err
+	}
+
 	if err := wc.checkout(ctx, version); err != nil {
 		wc.cleanup()
 		return nil, err
@@ -254,6 +264,14 @@ func (w workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) er
 		return err
 	}
 	return nil
+}
+
+func (w workingCopy) reset(ctx context.Context) error {
+	return w.g.git(ctx, w.dir, nil, "reset", "--hard")
+}
+
+func (w workingCopy) clean(ctx context.Context) error {
+	return w.g.git(ctx, w.dir, nil, "clean", "-fd")
 }
 
 func (w workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
