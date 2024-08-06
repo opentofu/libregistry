@@ -12,6 +12,16 @@ type Version struct {
 	Targets             []Target      `json:"targets"`               // A list of target platforms for which this provider version is available.
 }
 
+func (v Version) Normalize() Version {
+	return Version{
+		Version:             v.Version.Normalize(),
+		Protocols:           v.Protocols,
+		SHASumsURL:          v.SHASumsURL,
+		SHASumsSignatureURL: v.SHASumsSignatureURL,
+		Targets:             v.Targets,
+	}
+}
+
 func (v Version) Equals(other Version) bool {
 	if v.Version != other.Version {
 		return false
@@ -39,4 +49,12 @@ func (v Version) Equals(other Version) bool {
 		}
 	}
 	return true
+}
+
+func (v Version) Compare(other Version) int {
+	return v.Version.Compare(other.Version)
+}
+
+func (v Version) Validate() error {
+	return v.Version.Validate()
 }

@@ -53,6 +53,18 @@ func (a *Addr) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+func (a Addr) Compare(other Addr) int {
+	namespaceComparison := strings.Compare(a.Namespace, other.Namespace)
+	if namespaceComparison != 0 {
+		return namespaceComparison
+	}
+	nameComparison := strings.Compare(a.Name, other.Name)
+	if nameComparison != 0 {
+		return nameComparison
+	}
+	return strings.Compare(a.TargetSystem, other.TargetSystem)
+}
+
 func (a Addr) Normalize() Addr {
 	return NormalizeAddr(a)
 }
