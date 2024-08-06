@@ -86,6 +86,9 @@ type WorkingCopy interface {
 	// file descriptors may cause the Close() call to fail. Modifications to this directory should also be avoided.
 	// This call may return an error if raw directory access is not supported.
 	RawDirectory() (string, error)
+	// Client returns the VCS client this working copy belongs to.
+	Client() Client
+	// Close cleans up the working copy and releases the lock on it.
 	Close() error
 }
 

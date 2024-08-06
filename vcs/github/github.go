@@ -244,6 +244,10 @@ type workingCopy struct {
 	g          github
 }
 
+func (w workingCopy) Client() vcs.Client {
+	return w.g
+}
+
 func (w workingCopy) RawDirectory() (string, error) {
 	return w.dir, nil
 }

@@ -416,6 +416,7 @@ func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.Repositor
 		if ver.name == version {
 			return &workingCopy{
 				ver.contents,
+				i,
 			}, nil
 		}
 	}
@@ -428,6 +429,11 @@ func (i *inMemoryVCS) Checkout(ctx context.Context, repositoryAddr vcs.Repositor
 
 type workingCopy struct {
 	fs.ReadDirFS
+	client *inMemoryVCS
+}
+
+func (w workingCopy) Client() vcs.Client {
+	return w.client
 }
 
 func (w workingCopy) RawDirectory() (string, error) {
