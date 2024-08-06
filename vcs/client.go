@@ -88,6 +88,10 @@ type WorkingCopy interface {
 	RawDirectory() (string, error)
 	// Client returns the VCS client this working copy belongs to.
 	Client() Client
+	// Repository returns the repository for the current working copy.
+	Repository() RepositoryAddr
+	// Version returns the version number the working copy is checked out at.
+	Version() VersionNumber
 	// Close cleans up the working copy and releases the lock on it.
 	Close() error
 }
