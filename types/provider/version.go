@@ -4,6 +4,8 @@
 package provider
 
 // Version contains information about a specific provider version.
+//
+// swagger:model ProviderVersion
 type Version struct {
 	Version             VersionNumber `json:"version"`               // The version number of the provider.
 	Protocols           []string      `json:"protocols"`             // The protocol versions the provider supports.

@@ -4,6 +4,8 @@
 package module
 
 // Version represents a single version of a module.
+//
+// swagger:model ModuleVersion
 type Version struct {
 	// Version number of the provider. Correlates to a tag in the module repository.
 	Version VersionNumber `json:"version"`

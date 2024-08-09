@@ -8,6 +8,8 @@ import (
 )
 
 // VersionList is a slice of versions.
+//
+// swagger:model ProviderVersionList
 type VersionList []Version
 
 // Merge merges the current list with another list and returns the new merged list.

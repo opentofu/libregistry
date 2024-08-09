@@ -14,6 +14,9 @@ import (
 
 // Addr describes a module address combination of NAMESPACE-NAME-TARGETSYSTEM. This will translate to
 // github.com/NAMESPACE/terraform-TARGETSYSTEM-NAME for now.
+//
+// swagger:model ModuleAddr
+// swagger:type string
 type Addr struct {
 	Namespace    string
 	Name         string
