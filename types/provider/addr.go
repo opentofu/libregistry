@@ -14,7 +14,6 @@ import (
 // Addr represents a full provider address (NAMESPACE/NAME). It currently translates to
 // github.com/NAMESPACE/terraform-provider-NAME .
 //
-// swagger:model ProviderAddr
 // swagger:type string
 type Addr struct {
 	Namespace string
