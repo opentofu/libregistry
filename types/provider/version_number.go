@@ -16,6 +16,8 @@ var versionRe = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(|-[a-zA-Z0-9-]+)$`)
 const maxVersionLength = 255
 
 // VersionNumber describes the semver version number.
+//
+// swagger:model ProviderVersionNumber
 type VersionNumber string
 
 func (v VersionNumber) Normalize() VersionNumber {
