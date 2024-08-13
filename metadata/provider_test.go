@@ -14,8 +14,8 @@ import (
 )
 
 func TestProviderCRUD(t *testing.T) {
-	const testAliasedNamespace = "opentofu"
-	const testNamespace = "hashicorp"
+	const testAliasedNamespace = "hashicorp"
+	const testNamespace = "opentofu"
 	const testName = "test"
 
 	// TODO: this test relies on the hard-coded list of namespace aliases. This should be changed to creating aliases
