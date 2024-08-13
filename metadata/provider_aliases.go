@@ -97,7 +97,7 @@ func (r registryDataAPI) ListProviderAliases(_ context.Context) (map[provider.Ad
 		provider.Addr{Namespace: "opentofu", Name: "wavefront"}:        {Namespace: "vmware", Name: "wavefront"},
 		provider.Addr{Namespace: "opentofu", Name: "yandex"}:           {Namespace: "yandex-cloud", Name: "yandex"},
 	}
-	result := make(map[provider.Addr]provider.Addr, len(aliases)*2)
+	result := make(map[provider.Addr]provider.Addr, len(aliases))
 	for from, to := range aliases {
 		result[from] = to.Normalize()
 	}
