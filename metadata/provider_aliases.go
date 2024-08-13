@@ -99,7 +99,7 @@ func (r registryDataAPI) ListProviderAliases(_ context.Context) (map[provider.Ad
 	}
 	result := make(map[provider.Addr]provider.Addr, len(aliases))
 	for from, to := range aliases {
-		result[from] = to.Normalize()
+		result[from.Normalize()] = to.Normalize()
 	}
 
 	return result, nil
