@@ -51,13 +51,6 @@ func (r registryDataAPI) GetProviderCanonicalAddr(ctx context.Context, providerA
 func (r registryDataAPI) getProviderCanonical(ctx context.Context, providerAddr provider.Addr) (provider.Addr, storage.Path, error) {
 	providerAddr = providerAddr.Normalize()
 	providerPath := r.getProviderPathRaw(providerAddr)
-	exists, err := r.storageAPI.FileExists(ctx, providerPath)
-	if err != nil {
-		return providerAddr, providerPath, err
-	}
-	if exists {
-		return providerAddr, providerPath, nil
-	}
 
 	namespaceAliases, err := r.ListProviderNamespaceAliases(ctx)
 	if err != nil {
@@ -77,27 +70,27 @@ func (r registryDataAPI) getProviderCanonical(ctx context.Context, providerAddr 
 			Name:      providerAddr.Name,
 		}.Normalize()
 		providerPath = r.getProviderPathRaw(providerAddr)
-		exists, err = r.storageAPI.FileExists(ctx, providerPath)
+		_, err = r.storageAPI.FileExists(ctx, providerPath)
 		if err != nil {
 			return providerAddr, providerPath, err
-		}
-		if exists {
-			// If the aliased provider exists, don't look any further.
-			return providerAddr, providerPath, nil
 		}
 	}
 
 	if targetAddr, ok := providerAliases[providerAddr]; ok {
 		providerAddr = targetAddr.Normalize()
 		providerPath = r.getProviderPathRaw(providerAddr)
-		exists, err = r.storageAPI.FileExists(ctx, providerPath)
+		_, err = r.storageAPI.FileExists(ctx, providerPath)
 		if err != nil {
 			return providerAddr, providerPath, err
 		}
-		if exists {
-			// If the aliased provider exists, don't look any further.
-			return providerAddr, providerPath, nil
-		}
+	}
+
+	exists, err := r.storageAPI.FileExists(ctx, providerPath)
+	if err != nil {
+		return providerAddr, providerPath, err
+	}
+	if exists {
+		return providerAddr, providerPath, nil
 	}
 
 	return providerAddr, providerPath, &ProviderNotFoundError{

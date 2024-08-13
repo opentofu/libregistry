@@ -13,7 +13,7 @@ import (
 )
 
 func TestProviderAPI_GetAllProviders(t *testing.T) {
-	const testNamespace = "hashicorp"
+	const testNamespace = "opentofu"
 	const testName = "test"
 
 	providerAddr := provider.Addr{
@@ -58,7 +58,7 @@ func TestProviderAPI_GetAllProviders(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to get all providers (%v)", err)
 	}
-	if n := len(allProviders); n != 1 {
+	if n := len(allProviders); n != 2 {
 		t.Fatalf("Incorrect number of providers in registry (%d)", n)
 	}
 
