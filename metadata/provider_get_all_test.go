@@ -13,7 +13,7 @@ import (
 )
 
 func TestProviderAPI_GetAllProviders(t *testing.T) {
-	const testNamespace = "opentofu"
+	const testNamespace = "hashicorp"
 	const testName = "test"
 
 	providerAddr := provider.Addr{
