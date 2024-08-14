@@ -11,7 +11,7 @@ import (
 	"golang.org/x/mod/semver"
 )
 
-var versionRe = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(|-[a-zA-Z0-9-]+)$`)
+var versionRe = regexp.MustCompile(`^v[0-9]+\.[0-9]+\.[0-9]+(|-[a-zA-Z0-9-.]+)$`)
 
 const maxVersionLength = 255
 
