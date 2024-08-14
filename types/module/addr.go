@@ -71,7 +71,7 @@ func (a Addr) Normalize() Addr {
 
 func (a Addr) String() string {
 	normalized := a.Normalize()
-	return normalized.Namespace + "/terraform-" + normalized.Name + "-" + normalized.TargetSystem
+	return normalized.Namespace + "/" + normalized.Name + "/" + normalized.TargetSystem
 }
 
 func (a Addr) Equals(other Addr) bool {
