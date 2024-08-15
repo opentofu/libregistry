@@ -311,7 +311,7 @@ func (w *workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Ve
 			return t, nil
 		}
 	}
-	return vcs.Version{}, vcs.VersionNotFoundError{
+	return vcs.Version{}, &vcs.VersionNotFoundError{
 		RepositoryAddr: w.repository,
 		Version:        tag,
 	}
