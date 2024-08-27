@@ -14,8 +14,8 @@ import (
 // Addr represents a full provider address (NAMESPACE/NAME). It currently translates to
 // github.com/NAMESPACE/terraform-provider-NAME .
 type Addr struct {
-	Namespace string
-	Name      string
+	Namespace string `json:"-"`
+	Name      string `json:"-"`
 }
 
 func (a Addr) MarshalJSON() ([]byte, error) {

@@ -15,9 +15,9 @@ import (
 // Addr describes a module address combination of NAMESPACE-NAME-TARGETSYSTEM. This will translate to
 // github.com/NAMESPACE/terraform-TARGETSYSTEM-NAME for now.
 type Addr struct {
-	Namespace    string
-	Name         string
-	TargetSystem string
+	Namespace    string `json:"-"`
+	Name         string `json:"-"`
+	TargetSystem string `json:"-"`
 }
 
 func (a Addr) Validate() error {
@@ -71,7 +71,7 @@ func (a Addr) Normalize() Addr {
 
 func (a Addr) String() string {
 	normalized := a.Normalize()
-	return normalized.Namespace + "/terraform-" + normalized.Name + "-" + normalized.TargetSystem
+	return normalized.Namespace + "/" + normalized.Name + "/" + normalized.TargetSystem
 }
 
 func (a Addr) Equals(other Addr) bool {
