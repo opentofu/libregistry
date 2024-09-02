@@ -38,6 +38,9 @@ type ProviderDataAPI interface {
 	// non-recursive, returning a *ProviderNotFoundError if the target provider does not exist.
 	GetProviderCanonicalAddr(ctx context.Context, addr provider.Addr) (provider.Addr, error)
 
+	// GetProviderReverseAliases returns the aliases to which the current address is the canonical address.
+	GetProviderReverseAliases(ctx context.Context, addr provider.Addr) ([]provider.Addr, error)
+
 	// PutProvider queues up writing the specified provider metadata.
 	PutProvider(ctx context.Context, addr provider.Addr, metadata provider.Metadata) error
 	// DeleteProvider queues up deleting the specified provider.
