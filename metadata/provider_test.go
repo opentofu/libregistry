@@ -301,3 +301,65 @@ func TestProviderIndividualAliases(t *testing.T) {
 		}
 	}
 }
+
+// TestProviderReverseAliases tests looking up the reverse aliases.
+func TestProviderReverseAliases(t *testing.T) {
+	// TODO: this test relies on the hard-coded list of aliases. This should be changed to creating aliases dynamically.
+	canonicalAddr := provider.Addr{
+		Namespace: "integrations",
+		Name:      "github",
+	}
+	aliasedAddr1 := provider.Addr{
+		Namespace: "opentofu",
+		Name:      "github",
+	}
+	aliasedAddr2 := provider.Addr{
+		Namespace: "hashicorp",
+		Name:      "github",
+	}
+
+	providerVersion := provider.Version{
+		Version:             "v1.0.0",
+		Protocols:           []string{"5.0"},
+		SHASumsURL:          "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_SHA256SUMS",
+		SHASumsSignatureURL: "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_SHA256SUMS.sig",
+		Targets: []provider.Target{
+			{
+				OS:          "linux",
+				Arch:        "amd64",
+				Filename:    canonicalAddr.String() + "_linux_amd64.zip",
+				DownloadURL: "https://localhost/" + canonicalAddr.Namespace + "/" + canonicalAddr.Name + "/releases/download/v1.0.0/" + canonicalAddr.String() + "_linux_amd64.zip",
+				SHASum:      "c0535e4be2b79ffd93291305436bf889314e4a3faec05ecffcbb7df31ad9e51a",
+			},
+		},
+	}
+
+	providerMetadata := provider.Metadata{
+		Versions: []provider.Version{
+			providerVersion,
+		},
+	}
+
+	storage := memory.New()
+	api, err := metadata.New(storage)
+	if err != nil {
+		t.Fatalf("Failed to initialize API (%v)", err)
+	}
+
+	ctx := context.Background()
+
+	if err := api.PutProvider(ctx, canonicalAddr, providerMetadata); err != nil {
+		t.Fatalf("Failed to put provider (%v)", err)
+	}
+
+	reverseAliases, err := api.GetProviderReverseAliases(ctx, canonicalAddr)
+	if err != nil {
+		t.Fatalf("Failed to get provider reverse aliases (%v)", err)
+	}
+	if len(reverseAliases) != 2 {
+		t.Fatalf("Incorrect number of reverse aliases returned (%d).", len(reverseAliases))
+	}
+	if !((reverseAliases[0].Equals(aliasedAddr1) && reverseAliases[1].Equals(aliasedAddr2)) || (reverseAliases[0].Equals(aliasedAddr2) && reverseAliases[1].Equals(aliasedAddr1))) {
+		t.Fatalf("Incorrect reverse aliases returned.")
+	}
+}

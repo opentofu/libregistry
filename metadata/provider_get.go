@@ -97,3 +97,40 @@ func (r registryDataAPI) getProviderCanonical(ctx context.Context, providerAddr 
 		ProviderAddr: providerAddr,
 	}
 }
+
+func (r registryDataAPI) GetProviderReverseAliases(ctx context.Context, addr provider.Addr) ([]provider.Addr, error) {
+	providerAliases, err := r.ListProviderAliases(ctx)
+	if err != nil {
+		return nil, err
+	}
+	namespaceAliases, err := r.ListProviderNamespaceAliases(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	var results []provider.Addr
+	for alias, target := range providerAliases {
+		if target.Equals(addr) {
+			results = append(results, alias)
+			// Look up the namespace alias of the provider alias to include it in the list.
+			for namespace, targetNamespace := range namespaceAliases {
+				if provider.NormalizeNamespace(targetNamespace) == provider.NormalizeNamespace(alias.Namespace) {
+					results = append(results, provider.Addr{
+						Namespace: namespace,
+						Name:      target.Name,
+					})
+				}
+			}
+
+		}
+	}
+	for namespace, targetNamespace := range namespaceAliases {
+		if provider.NormalizeNamespace(targetNamespace) == provider.NormalizeNamespace(addr.Namespace) {
+			results = append(results, provider.Addr{
+				Namespace: namespace,
+				Name:      addr.Name,
+			})
+		}
+	}
+	return results, nil
+}
