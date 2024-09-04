@@ -18,6 +18,8 @@ const maxVersionLength = 255
 // VersionNumber describes the semver version number. Note that in contrast to provider versions module versions
 // do not have a compulsory "v" prefix. Call ToVCSVersion() before you call Normalize() in order to get the correct
 // VCS version.
+//
+// swagger:model ModuleVersionNumber
 type VersionNumber string
 
 // Normalize adds a "v" prefix if none is present. Note, however, that in contrast to provider versions module versions
