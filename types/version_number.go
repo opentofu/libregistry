@@ -1,3 +1,6 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: MPL-2.0
+
 package types
 
 type VersionNumber interface {
