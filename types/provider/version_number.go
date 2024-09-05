@@ -39,9 +39,10 @@ func (v VersionNumber) Validate() error {
 	return nil
 }
 
-// ToVCSVersion creates a vcs.VersionNumber from the VersionNumber.
+// ToVCSVersion creates a vcs.VersionNumber from the VersionNumber. Call ToVCSVersion() before you call Normalize() in
+// order to get the correct VCS version.
 func (v VersionNumber) ToVCSVersion() vcs.VersionNumber {
-	return vcs.VersionNumber(v.Normalize())
+	return vcs.VersionNumber(v)
 }
 
 type InvalidVersionNumber struct {
