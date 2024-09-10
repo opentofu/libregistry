@@ -109,6 +109,7 @@ func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.Repository
 	type repoInfoResponse struct {
 		Description     string `json:"description"`
 		StargazersCount int    `json:"stargazers_count"`
+		ForkCount       int    `json:"forks_count"`
 		Parent          *struct {
 			Name  string `json:"name"`
 			Owner struct {
@@ -126,6 +127,7 @@ func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.Repository
 	repoInfo := vcs.RepositoryInfo{
 		Description: response.Description,
 		Popularity:  response.StargazersCount,
+		ForkCount:   response.ForkCount,
 	}
 	if response.Parent != nil {
 		repoInfo.ForkOf = &vcs.RepositoryAddr{

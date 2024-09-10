@@ -104,4 +104,6 @@ type RepositoryInfo struct {
 	// ForkOf indicates that this repository is a fork or copy of another repository. This is empty if the
 	// repository is not a known fork/copy.
 	ForkOf *RepositoryAddr `json:"fork_of,omitempty"`
+	// ForkCount exposes the amount of copies/forks present in the VCS.
+	ForkCount int
 }
