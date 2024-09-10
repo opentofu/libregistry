@@ -13,6 +13,7 @@ type Client interface {
 	// ParseRepositoryAddr parses the repository address from a string.
 	ParseRepositoryAddr(ref string) (RepositoryAddr, error)
 
+	// GetRepositoryInfo returns the information from the VCS API.
 	GetRepositoryInfo(ctx context.Context, repository RepositoryAddr) (RepositoryInfo, error)
 
 	// ListLatestTags returns the last few tags in the VCS system. This is a lightweight call and
@@ -98,4 +99,9 @@ type WorkingCopy interface {
 
 type RepositoryInfo struct {
 	Description string `json:"description"`
+	// Popularity indicates how popular (stars, etc.) the repository is.
+	Popularity int `json:"popularity"`
+	// ForkOf indicates that this repository is a fork or copy of another repository. This is empty if the
+	// repository is not a known fork/copy.
+	ForkOf *RepositoryAddr `json:"fork_of,omitempty"`
 }
