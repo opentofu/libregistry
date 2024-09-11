@@ -107,7 +107,15 @@ func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.Repository
 		return vcs.RepositoryInfo{}, err
 	}
 	type repoInfoResponse struct {
-		Description string `json:"description"`
+		Description     string `json:"description"`
+		StargazersCount int    `json:"stargazers_count"`
+		ForkCount       int    `json:"forks_count"`
+		Parent          *struct {
+			Name  string `json:"name"`
+			Owner struct {
+				Login string `json:"login"`
+			} `json:"owner"`
+		} `json:"parent"`
 	}
 
 	var response repoInfoResponse
@@ -115,9 +123,19 @@ func (g github) GetRepositoryInfo(ctx context.Context, repository vcs.Repository
 	if err := g.request(ctx, "https://api.github.com/repos/"+url.PathEscape(string(repository.Org))+"/"+url.PathEscape(repository.Name), &response); err != nil {
 		return vcs.RepositoryInfo{}, err
 	}
-	return vcs.RepositoryInfo{
+
+	repoInfo := vcs.RepositoryInfo{
 		Description: response.Description,
-	}, nil
+		Popularity:  response.StargazersCount,
+		ForkCount:   response.ForkCount,
+	}
+	if response.Parent != nil {
+		repoInfo.ForkOf = &vcs.RepositoryAddr{
+			Org:  vcs.OrganizationAddr(response.Parent.Owner.Login),
+			Name: response.Parent.Name,
+		}
+	}
+	return repoInfo, nil
 }
 
 func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, version vcs.VersionNumber) (vcs.WorkingCopy, error) {
