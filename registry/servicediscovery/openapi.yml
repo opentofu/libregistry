@@ -1,0 +1,59 @@
+definitions:
+    RegistryPortNumber:
+        format: int64
+        type: integer
+    RegistryServiceDiscoveryResponse:
+        properties:
+            login.v1:
+                description: |-
+                    Login protocol struct. This is not supported by the OpenTofu Registry, but alternative
+                    registries may make use of them. See https://opentofu.org/docs/internals/login-protocol/
+                    for details.
+                properties:
+                    authz:
+                        description: OAuth URL for the authorization endpoint.
+                        type: string
+                    client:
+                        description: Client ID OpenTofu should use to authenticate.
+                        type: string
+                    grant_types:
+                        description: Supported grant types. Currently only the authz_code grant type is supported in OpenTofu.
+                        items:
+                            type: string
+                        type: array
+                    ports:
+                        default:
+                            - 1024
+                            - 65535
+                        description: Port range from-to for temporary HTTP server to perform OAuth authentication.
+                        example:
+                            - 10000
+                            - 10010
+                        items:
+                            $ref: '#/definitions/RegistryPortNumber'
+                        maxItems: 2
+                        minItems: 2
+                        type: array
+                    token:
+                        description: OAuth URL for the token endpoint.
+                        type: string
+                required:
+                    - client
+                    - grant_types
+                    - authz
+                    - token
+                type: object
+            modules.v1:
+                type: string
+            providers.v1:
+                type: string
+        title: Response contains the response structure for an OpenTofu service discovery request.
+        type: object
+info:
+    description: API for OpenTofu to perform service discovery.
+    title: OpenTofu Registry Service Discovery API
+    version: 1.0.0
+paths: {}
+schemes:
+    - https
+swagger: "2.0"
