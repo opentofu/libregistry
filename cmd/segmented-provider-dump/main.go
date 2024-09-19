@@ -1,3 +1,6 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: MPL-2.0
+
 // Package main contains a tool to dump providers according to version batch sizes.
 package main
 
