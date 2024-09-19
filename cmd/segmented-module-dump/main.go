@@ -16,7 +16,7 @@ import (
 
 func main() {
 	if len(os.Args) != 3 {
-		_, _ = os.Stderr.Write([]byte("Usage: segmented-provider-dump path/to/registry batchsize"))
+		_, _ = os.Stderr.Write([]byte("Usage: segmented-module-dump path/to/registry batchsize"))
 		os.Exit(1)
 	}
 
