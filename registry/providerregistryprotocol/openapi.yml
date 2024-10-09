@@ -1,0 +1,202 @@
+definitions:
+    RegistryGetProviderVersionResponse:
+        description: |-
+            GetProviderVersionResponse is the response to a GetProviderVersionRequest to obtain the download
+            details of a specific provider version.
+        properties:
+            arch:
+                $ref: '#/definitions/RegistryProviderArch'
+            download_url:
+                type: string
+            filename:
+                type: string
+            os:
+                $ref: '#/definitions/RegistryProviderOS'
+            protocols:
+                items:
+                    $ref: '#/definitions/RegistryProviderProtocolVersion'
+                type: array
+            shasum:
+                type: string
+            shasums_signature_url:
+                type: string
+            shasums_url:
+                type: string
+            signing_keys:
+                properties:
+                    gpg_public_keys:
+                        items:
+                            properties:
+                                ascii_armor:
+                                    description: |-
+                                        PGP signing key for the provider. May be empty for the OpenTofu registry as not all providers have
+                                        submitted a signing key.
+                                    type: string
+                                key_id:
+                                    description: |-
+                                        PGP key ID for the signing key for this provider. May be empty for the OpenTofu registry as not all
+                                        providers have submitted a signing key.
+                                    type: string
+                                source:
+                                    description: Source description for the provider author. (Not used in OpenTofu or legacy Terraform.)
+                                    type: string
+                                source_url:
+                                    description: Source URL for the provider author. (Not used in OpenTofu or legacy Terraform.)
+                                    type: string
+                                trust_signature:
+                                    description: Legacy Hashicorp partner signature (PGP ASCII armor).
+                                    type: string
+                            type: object
+                        type: array
+                required:
+                    - gpg_public_keys
+                type: object
+        required:
+            - protocols
+            - os
+            - arch
+            - filename
+            - download_url
+            - shasums_url
+            - shasums_signature_url
+            - shasum
+            - signing_keys
+        type: object
+    RegistryHostname:
+        type: string
+    RegistryListAvailableProviderVersionsPlatform:
+        properties:
+            arch:
+                $ref: '#/definitions/RegistryProviderArch'
+            os:
+                $ref: '#/definitions/RegistryProviderOS'
+        type: object
+    RegistryListAvailableProviderVersionsResponse:
+        properties:
+            versions:
+                items:
+                    $ref: '#/definitions/RegistryListAvailableProviderVersionsResponseVersion'
+                type: array
+            warnings:
+                items:
+                    type: string
+                type: array
+        type: object
+    RegistryListAvailableProviderVersionsResponseVersion:
+        properties:
+            Platforms:
+                items:
+                    $ref: '#/definitions/RegistryListAvailableProviderVersionsPlatform'
+                type: array
+            protocols:
+                items:
+                    $ref: '#/definitions/RegistryProviderProtocolVersion'
+                type: array
+            version:
+                $ref: '#/definitions/RegistryProviderVersion'
+        type: object
+    RegistryPackageTarget:
+        description: 'example: darwin_amd64'
+        title: |-
+            PackageTarget is a string that describes a platform and architecture combination, separated
+            by an underscore (_).
+        type: string
+    RegistryProviderArch:
+        type: string
+    RegistryProviderNamespace:
+        type: string
+    RegistryProviderOS:
+        type: string
+    RegistryProviderProtocolVersion:
+        type: string
+    RegistryProviderType:
+        type: string
+    RegistryProviderVersion:
+        type: string
+info:
+    description: API for OpenTofu provider registry protocol
+    title: OpenTofu Provider Registry API
+    version: 1.0.0
+paths:
+    /{namespace}/{type}/{version}/download/{os}/{arch}:
+        get:
+            description: Returns the details on how to download a provider for a specific OS and architecture.
+            operationId: GetProviderVersion
+            parameters:
+                - description: Namespace of the provider.
+                  example: hashicorp
+                  in: path
+                  name: namespace
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderNamespace'
+                - description: Type part of the provider address.
+                  example: aws
+                  in: path
+                  name: type
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderType'
+                - description: Version number of the provider
+                  example: aws
+                  in: path
+                  name: version
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderVersion'
+                - description: Operating system for the provider.
+                  example: darwin
+                  in: path
+                  name: os
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderOS'
+                - description: Architecture for the provider.
+                  example: amd64
+                  in: path
+                  name: arch
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderArch'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: The details on the version.
+                    schema:
+                        $ref: '#/definitions/RegistryGetProviderVersionResponse'
+            summary: Get a provider version
+            tags:
+                - Registry Protocol
+    /{namespace}/{type}/versions:
+        get:
+            description: Returns the endpoints for modules and providers.
+            operationId: ListAvailableProviderVersions
+            parameters:
+                - description: Namespace of the provider to mirror.
+                  example: hashicorp
+                  in: path
+                  name: namespace
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderNamespace'
+                - description: Type part of the provider address.
+                  example: aws
+                  in: path
+                  name: type
+                  required: true
+                  schema:
+                    $ref: '#/definitions/RegistryProviderType'
+            produces:
+                - application/json
+            responses:
+                "200":
+                    description: A list of versions for a provider.
+                    schema:
+                        $ref: '#/definitions/RegistryListAvailableProviderVersionsResponse'
+            summary: List available provider versions
+            tags:
+                - Registry Protocol
+schemes:
+    - https
+swagger: "2.0"
