@@ -380,7 +380,7 @@ func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ..
 	cmd.Stdout = stdout
 	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
 	cmd.Dir = dir
-	cmd.Env = []string{"GIT_TERMINAL_PROMPT=1"}
+	cmd.Env = []string{"GIT_TERMINAL_PROMPT=0"}
 	done := make(chan struct{})
 	if err := cmd.Start(); err != nil {
 		return fmt.Errorf("failed to run %s (%w)", commandString, err)
