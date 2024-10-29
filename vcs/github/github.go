@@ -241,6 +241,11 @@ func (g github) getWorkingCopy(ctx context.Context, repository vcs.RepositoryAdd
 	}
 
 	if err := g.git(ctx, checkoutDirectory, nil, "fetch", "--tags", "--force"); err != nil {
+		var exitErr *exec.ExitError
+		if errors.As(err, &exitErr) && exitErr.ExitCode() == 128 {
+			cleanup()
+			return nil, &vcs.RepositoryNotFoundError{RepositoryAddr: repository, Cause: err}
+		}
 		cleanup()
 		return nil, err
 	}
