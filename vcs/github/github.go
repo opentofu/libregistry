@@ -62,7 +62,7 @@ func (g github) GetTagVersion(ctx context.Context, repository vcs.RepositoryAddr
 
 	wc, err := g.getWorkingCopy(ctx, repository)
 	if err != nil {
-		return vcs.Version{}, nil
+		return vcs.Version{}, err
 	}
 	defer wc.cleanup()
 	return wc.getTag(ctx, version)
@@ -144,13 +144,13 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 	}
 	wc, err := g.getWorkingCopy(ctx, repository)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to check out %s: %w", repository, fmt.Errorf("failed to get working copy: %w", err))
 	}
 
 	tagExists, err := wc.tagExists(ctx, version)
 	if err != nil {
 		wc.cleanup()
-		return nil, err
+		return nil, fmt.Errorf("failed to check out %s: %w", repository, fmt.Errorf("failed to check if tag %s exists: %w", version, err))
 	}
 	if !tagExists {
 		wc.cleanup()
@@ -162,17 +162,17 @@ func (g github) Checkout(ctx context.Context, repository vcs.RepositoryAddr, ver
 
 	if err := wc.reset(ctx); err != nil {
 		wc.cleanup()
-		return nil, err
+		return nil, fmt.Errorf("failed to check out %s: %w", repository, fmt.Errorf("failed to reset repository: %w", err))
 	}
 
 	if err := wc.clean(ctx); err != nil {
 		wc.cleanup()
-		return nil, err
+		return nil, fmt.Errorf("failed to check out %s: %w", repository, fmt.Errorf("failed to clean repository: %w", err))
 	}
 
 	if err := wc.checkout(ctx, version); err != nil {
 		wc.cleanup()
-		return nil, err
+		return nil, fmt.Errorf("failed to check out %s: %w", repository, fmt.Errorf("failed to check out tag %s: %w", version, err))
 	}
 	return wc, nil
 }
