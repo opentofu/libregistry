@@ -342,7 +342,7 @@ func (w *workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Ve
 
 func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 	stdout := &bytes.Buffer{}
-	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*"); err != nil {
+	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate)", "refs/tags/*"); err != nil {
 		return nil, err
 	}
 	lines := strings.Split(stdout.String(), "\n")
@@ -357,11 +357,10 @@ func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 			return nil, fmt.Errorf("line does not contain enough parts to parse: %s", line)
 		}
 		tag := vcs.VersionNumber(strings.ReplaceAll(parts[0], "refs/tags/", ""))
-		unixTime, err := strconv.Atoi(parts[1])
+		created, err := time.Parse("Mon Jan 2 15:04:05 2006 -0700", parts[1])
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse git output: %s (%v)", line, err)
 		}
-		created := time.Unix(int64(unixTime), 0)
 		ver := vcs.Version{
 			VersionNumber: tag,
 			Created:       created,
