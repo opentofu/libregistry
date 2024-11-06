@@ -61,6 +61,6 @@ func (r OrganizationNotFoundError) Unwrap() error {
 	return r.Cause
 }
 
-var orgNameRe = regexp.MustCompile("^([a-zA-Z0-9]+)(|(-[a-zA-Z0-9]+)*)$")
+var orgNameRe = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9\-]*$`)
 
 const maxOrgNameLength = 255
