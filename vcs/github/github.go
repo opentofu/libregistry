@@ -409,7 +409,7 @@ func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ..
 		return fmt.Errorf("%s failed (%w)", commandString, lastErr)
 	}
 	if exitErr.ExitCode() != 0 {
-		return fmt.Errorf("%s exited with exit code %d", commandString, exitErr.ExitCode())
+		return fmt.Errorf("%s exited with exit code %d (%w)", commandString, exitErr.ExitCode(), exitErr)
 	}
 	return nil
 }
