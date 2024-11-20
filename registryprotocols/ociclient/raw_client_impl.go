@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/opentofu/libregistry/logger"
 	"net/http"
 	"strings"
 )
@@ -18,6 +19,7 @@ import (
 type rawClient struct {
 	httpClient  *http.Client
 	credentials ScopedCredentials
+	logger      logger.Logger
 }
 
 func (r *rawClient) Check(
@@ -28,6 +30,8 @@ func (r *rawClient) Check(
 		return nil, err
 	}
 
+	r.logger.Debug(ctx, "Performing access check for registry %s...", registry)
+
 	endpoint := fmt.Sprintf("https://%s/v2/", registry)
 
 	response, warnings, err := getWithAuthentication(ctx, r, OCIAddr{
@@ -35,10 +39,23 @@ func (r *rawClient) Check(
 		Name:     "",
 	}, endpoint, nil)
 	if err != nil {
-		return warnings, err
+		// Some OCI registries, such as ghcr.io, don't allow anonymous authentication for the /v2/ endpoint.
+		var authRequiredError *OCIRawAuthenticationRequiredError
+		if !errors.As(err, &authRequiredError) {
+			var ociError *OCIRawErrors
+			if errors.As(err, &ociError) {
+				r.logger.Warn(ctx, "Access check for registry %s failed and no structured error returned, this may not be an OCI registry. (%v)", registry, err)
+			} else {
+				r.logger.Debug(ctx, "Access check for registry %s failed: %v", registry, err)
+			}
+			return warnings, err
+		}
+		r.logger.Debug(ctx, "Access check for registry %s failed with an authentication requirement, ignoring error: %v", registry, err)
 	}
-	_ = response.Body.Close()
-	return warnings, err
+	if response != nil {
+		_ = response.Body.Close()
+	}
+	return warnings, nil
 }
 
 func (r *rawClient) ContentDiscovery(
@@ -48,6 +65,8 @@ func (r *rawClient) ContentDiscovery(
 	if err := addr.Validate(); err != nil {
 		return OCIRawContentDiscoveryResponse{}, nil, err
 	}
+
+	r.logger.Trace(ctx, "Performing content discovery for %s...", addr)
 
 	var result OCIRawContentDiscoveryResponse
 	endpoint := fmt.Sprintf("https://%s/v2/%s/tags/list", addr.Registry, addr.Name)
@@ -151,13 +170,19 @@ func getWithAuthentication(
 
 	var authRequired *OCIRawAuthenticationRequiredError
 	if !errors.As(err, &authRequired) {
-		// No further authentication required.
+		// Not an authentication required error.
+		r.logger.Trace(ctx, "The request to %s failed with the following error: %v", endpoint, err)
 		return response, warnings, err
 	}
 	// Authentication required, authenticate and try again:
 
 	// We now have to try and authenticate against the realm endpoint
 	authSchemes := authRequired.GetAuthSchemes("Bearer")
+	if len(authSchemes) == 0 {
+		r.logger.Debug(ctx, "The request to %s failed with an authentication failure, but no suitable (Bearer) authentication endpoints were provided.", endpoint, err)
+		return response, warnings, err
+	}
+	r.logger.Debug(ctx, "The request to %s failed with an authentication failure, attempting to obtain a bearer token...", endpoint)
 	for _, authScheme := range authSchemes {
 		realm, ok := authScheme.GetParam("realm")
 		if !ok || realm == "" {
@@ -183,12 +208,11 @@ func getWithAuthentication(
 		}
 		authorization := ""
 		if creds != nil {
-			// Try anonymous auth
 			authorization = "Basic " + base64.RawURLEncoding.EncodeToString([]byte(creds.Basic.Username+":"+creds.Basic.Password))
 		}
 		response, newWarnings, err := getRequest(ctx, r, realm, []string{"application/json"}, authorization)
 		if err != nil {
-			// TODO log this error
+			r.logger.Debug(ctx, "Authentication request to %s for endpoint %s failed, trying next authentication method (%v).", realm, endpoint, err)
 			continue
 		}
 
@@ -196,7 +220,7 @@ func getWithAuthentication(
 		decoder := json.NewDecoder(response.Body)
 		if err := decoder.Decode(&authResponse); err != nil {
 			_ = response.Body.Close()
-			// TODO log this, this should never happen with a compliant registry.
+			r.logger.Debug(ctx, "Protocol error: authentication request to %s for endpoint %s returned an invalid response, trying next authentication method... (%v)", realm, endpoint, err)
 			continue
 		}
 		_ = response.Body.Close()
@@ -213,12 +237,15 @@ func getWithAuthentication(
 		warnings = append(warnings, newWarnings...)
 		if err == nil {
 			// We don't close the response on purpose so the caller can use it.
+			r.logger.Debug(ctx, "Authentication for %s successful on realm %s.", endpoint, realm)
 			return response, warnings, err
 		}
+		r.logger.Debug(ctx, "Authentication for %s failed on realm %s, trying next authentication method... (%v)", endpoint, realm, err)
 		if response != nil {
 			_ = response.Body.Close()
 		}
 	}
+	r.logger.Trace(ctx, "No more bearer authentication methods remaining, authentication for %s failed.", endpoint)
 	return response, warnings, authRequired
 }
 
@@ -257,7 +284,10 @@ func getRequest(
 		req.Header.Add("Accept", strings.Join(accept, ", "))
 	}
 	if len(authorization) > 0 {
+		r.logger.Trace(ctx, "Sending request to %s with credentials...", endpoint)
 		req.Header.Add("Authorization", authorization)
+	} else {
+		r.logger.Trace(ctx, "Sending request to %s without credentials...", endpoint)
 	}
 	resp, err := r.httpClient.Do(req)
 	if err != nil {
@@ -265,13 +295,18 @@ func getRequest(
 	}
 
 	warnings := OCIWarnings(resp.Header.Values("Warning"))
+	for _, warning := range warnings {
+		r.logger.Trace(ctx, "OCI endpoint %s returned a warning: %s", endpoint, warning)
+	}
 
 	e := &OCIRawErrors{}
 	switch {
 	case resp.StatusCode > 199 && resp.StatusCode < 300:
 		// We don't close the body here so the caller can use it.
 		return resp, warnings, nil
-	case resp.StatusCode == 401:
+	case resp.StatusCode == 401 || resp.StatusCode == 403:
+		// We treat the 401 and 403 the same, even though it's not entirely RFC-conformant because some registries,
+		// such as ghcr.io, use both error codes in certain situations incorrectly.
 		defer func() {
 			_ = resp.Body.Close()
 		}()
@@ -281,7 +316,7 @@ func getRequest(
 			schemes, err := parseWWWAuthenticate(wwwAuthenticateHeader)
 			if err != nil {
 				// Invalid www-authenticate header, the response is malformed and we can't use it
-				// TODO log this
+				r.logger.Warn(ctx, "The registry at %s returned a malformed WWW-Authenticate header. (%v)", endpoint, err)
 				return nil, warnings, fmt.Errorf("cannot decode www-authenticate header from OCI registry (%w)", err)
 			}
 			authSchemes = append(authSchemes, schemes...)
@@ -290,7 +325,7 @@ func getRequest(
 		if err := decoder.Decode(e); err != nil {
 			// We can't decode the error response properly, return the authentication required response
 			// without a cause.
-			// TODO do we need to log this?
+			r.logger.Trace(ctx, "Cannot decode JSON error response from %s. (%v)", endpoint, err)
 		}
 		return nil, warnings, newOCIRawAuthenticationRequiredError(
 			endpoint,
@@ -298,14 +333,15 @@ func getRequest(
 			e,
 		)
 	default:
-		// TODO logging the body here would be useful.
 		defer func() {
 			_ = resp.Body.Close()
 		}()
 		decoder := json.NewDecoder(resp.Body)
 		if err := decoder.Decode(e); err != nil {
+			r.logger.Trace(ctx, "The endpoint at %s returned an unexpected HTTP error %d. Additionally, the error could not be interpreted as an OCI error response. (%v)", endpoint, resp.StatusCode, err)
 			return nil, warnings, fmt.Errorf("cannot decode OCI response from %s into %T (%w)", endpoint, e, err)
 		}
+		r.logger.Trace(ctx, "The endpoint at %s returned an unexpected HTTP error %d. (%v)", endpoint, resp.StatusCode, e)
 		return nil, warnings, e
 	}
 }

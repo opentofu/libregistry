@@ -7,7 +7,6 @@ package ociclient
 
 import (
 	"fmt"
-	"net/url"
 	"strings"
 )
 
@@ -31,7 +30,8 @@ func (o OCIRawAuthScheme) ParamsAsQueryString(withoutParam string) string {
 		if withoutParam != "" && strings.ToLower(k) == strings.ToLower(withoutParam) {
 			continue
 		}
-		parts = append(parts, url.QueryEscape(k)+"="+url.QueryEscape(v))
+		// Note: this is intentionally not escaped as the registry seems the expect the values as-is.
+		parts = append(parts, k+"="+v)
 	}
 	return strings.Join(parts, "&")
 }

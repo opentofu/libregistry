@@ -11,8 +11,9 @@ import (
 
 // OCIClient implements a high level interface giving you access to a Docker / OCI Registry.
 type OCIClient interface {
-	// ListVersions lists all available version references.
-	ListVersions(
+	// ListReferences lists all available references. Note that references can be both version numbers, names
+	// (such as "latest"), as well as digests. You should filter for what you need.
+	ListReferences(
 		ctx context.Context,
 		addr OCIAddr,
 	) ([]OCIReference, OCIWarnings, error)
@@ -43,6 +44,8 @@ func NewFromConfig(config Config) (OCIClient, error) {
 		return nil, err
 	}
 	return &ociClient{
-		config,
+		config.TempDirectory,
+		config.RawClient,
+		config.Logger.WithName("OCI client"),
 	}, nil
 }

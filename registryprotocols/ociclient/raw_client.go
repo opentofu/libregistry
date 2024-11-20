@@ -56,11 +56,16 @@ func NewRawOCIClient(opts ...RawOCIClientOpt) (RawOCIClient, error) {
 			return nil, err
 		}
 	}
+	return NewRawOCIClientFromConfig(c)
+}
+
+func NewRawOCIClientFromConfig(c RawOCIClientConfig) (RawOCIClient, error) {
 	if err := c.ApplyDefaultsAndValidate(); err != nil {
 		return nil, err
 	}
 	return &rawClient{
 		httpClient:  c.HTTPClient,
 		credentials: c.Credentials,
+		logger:      c.logger.WithName("OCI client"),
 	}, nil
 }

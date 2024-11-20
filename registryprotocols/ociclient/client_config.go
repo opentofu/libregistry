@@ -5,7 +5,10 @@
 
 package ociclient
 
-import "os"
+import (
+	"github.com/opentofu/libregistry/logger"
+	"os"
+)
 
 // Config is the configuration structure for the OCIClient.
 type Config struct {
@@ -15,6 +18,9 @@ type Config struct {
 
 	// RawClient holds the underlying raw client. Defaults to the built-in client.
 	RawClient RawOCIClient
+
+	// Logger contains the logger to use for this client.
+	Logger logger.Logger
 }
 
 func (c *Config) ApplyDefaultsAndValidate() error {
@@ -22,22 +28,26 @@ func (c *Config) ApplyDefaultsAndValidate() error {
 		c.TempDirectory = os.TempDir()
 	}
 	_, err := os.Stat(c.TempDirectory)
-	if err == nil {
-		return nil
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return newConfigurationError("invalid temporary directory: "+c.TempDirectory, err)
+		}
+		if err := os.MkdirAll(c.TempDirectory, 0755); err != nil {
+			return newConfigurationError("cannot create temporary directory: "+c.TempDirectory, err)
+		}
 	}
-	if !os.IsNotExist(err) {
-		return newConfigurationError("invalid temporary directory: "+c.TempDirectory, err)
-	}
-	if err := os.MkdirAll(c.TempDirectory, 0755); err != nil {
-		return newConfigurationError("cannot create temporary directory: "+c.TempDirectory, err)
+
+	if c.Logger == nil {
+		c.Logger = logger.NewNoopLogger()
 	}
 
 	if c.RawClient == nil {
-		c.RawClient, err = NewRawOCIClient()
+		c.RawClient, err = NewRawOCIClient(WithRawLogger(c.Logger))
 		if err != nil {
 			return err
 		}
 	}
+
 	return nil
 }
 
@@ -57,6 +67,14 @@ func WithTempDirectory(tempDirectory string) Opt {
 func WithRawClient(client RawOCIClient) Opt {
 	return func(c *Config) error {
 		c.RawClient = client
+		return nil
+	}
+}
+
+// WithLogger sets up a logger to use for the OCI client.
+func WithLogger(logger logger.Logger) Opt {
+	return func(c *Config) error {
+		c.Logger = logger
 		return nil
 	}
 }

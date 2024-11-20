@@ -7,6 +7,8 @@ package ociclient
 
 // ScopedCredentials describes a configuration structure that holds credentials on a per-registry basis.
 // The key may contain a hostname, or it may contain a hostname and a name for which the credentials apply.
+//
+// TODO this needs locking for parallel access.
 type ScopedCredentials map[OCIScopeString]*ClientCredentials
 
 func (s ScopedCredentials) Validate() error {
@@ -39,6 +41,7 @@ func (s ScopedCredentials) GetCredentialsForRegistry(registry OCIRegistry, filte
 			return creds
 		}
 	}
+	return nil
 }
 
 // GetCredentialsForAddr returns the most appropriate credentials for the given scope.
