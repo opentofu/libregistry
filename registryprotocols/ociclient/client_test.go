@@ -75,11 +75,11 @@ func TestPull(t *testing.T) {
 			break
 		}
 		t.Logf("Found file: %s", image.Filename())
-		if image.Filename() == "tofu" {
+		if image.Filename() == "usr/local/bin/tofu" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("no tofu/tofu.exe found in downloaded image")
+		t.Fatalf("no tofu found in downloaded image")
 	}
 }

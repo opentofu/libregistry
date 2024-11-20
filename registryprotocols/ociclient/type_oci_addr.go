@@ -72,6 +72,32 @@ func (o OCIAddrWithReference) Equals(other OCIAddrWithReference) bool {
 
 var _ validatable = OCIAddrWithReference{}
 
+// OCIAddrWithTag describes an OCIAddr with an additional tag (e.g. "latest").
+type OCIAddrWithTag struct {
+	OCIAddr
+	Tag OCITag `json:"tag"`
+}
+
+func (o OCIAddrWithTag) Validate() error {
+	if err := o.OCIAddr.Validate(); err != nil {
+		return err
+	}
+	if err := o.Tag.Validate(); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (o OCIAddrWithTag) String() string {
+	return o.OCIAddr.String() + ":" + string(o.Tag)
+}
+
+func (o OCIAddrWithTag) Equals(other OCIAddrWithTag) bool {
+	return o.Registry.Equals(other.Registry) && o.Name.Equals(other.Name) && o.Tag.Equals(other.Tag)
+}
+
+var _ validatable = OCIAddrWithTag{}
+
 // OCIAddrWithDigest describes an OCIAddr with an additional digest (e.g. SHA checksum).
 type OCIAddrWithDigest struct {
 	OCIAddr

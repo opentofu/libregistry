@@ -225,9 +225,11 @@ func (p *pulledOCIImage) nextFileInTar() error {
 			if err := p.gzip.Close(); err != nil {
 				return fmt.Errorf("unexpected error while closing GZIP stream %s (%w)", p.layers[p.currentLayer].tempFile, err)
 			}
+			p.gzip = nil
 			if err := p.fh.Close(); err != nil {
 				return fmt.Errorf("unexpected error while closing file %s (%w)", p.layers[p.currentLayer].tempFile, err)
 			}
+			p.fh = nil
 		} else {
 			return fmt.Errorf("unexpected error while reading tar file %s (%w)", p.layers[p.currentLayer].tempFile, err)
 		}

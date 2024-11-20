@@ -13,7 +13,7 @@ import (
 // OCIDigest describes a checksum used in OCI manifests. The default registered
 // algorithms include "sha256" and "sha512", whereas "sha256" should be used by default.
 // For details see https://github.com/opencontainers/image-spec/blob/v1.0.1/descriptor.md#digests
-type OCIDigest string
+type OCIDigest OCIReference
 
 func (o OCIDigest) Validate() error {
 	if !ociDigestRe.MatchString(string(o)) {
