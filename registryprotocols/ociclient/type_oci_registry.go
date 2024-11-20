@@ -35,7 +35,7 @@ func (o OCIRegistry) Validate() error {
 }
 
 func (o OCIRegistry) Equals(other OCIRegistry) bool {
-	return strings.ToLower(string(o)) == strings.ToLower(string(other))
+	return strings.EqualFold(string(o), string(other))
 }
 
 var _ validatable = OCIRegistry("")

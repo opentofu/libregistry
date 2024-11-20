@@ -17,7 +17,7 @@ type OCIRawAuthScheme struct {
 
 func (o OCIRawAuthScheme) GetParam(name string) (string, bool) {
 	for k, v := range o.Params {
-		if strings.ToLower(k) == strings.ToLower(name) {
+		if strings.EqualFold(k, name) {
 			return v, true
 		}
 	}
@@ -27,7 +27,7 @@ func (o OCIRawAuthScheme) GetParam(name string) (string, bool) {
 func (o OCIRawAuthScheme) ParamsAsQueryString(withoutParam string) string {
 	var parts []string
 	for k, v := range o.Params {
-		if withoutParam != "" && strings.ToLower(k) == strings.ToLower(withoutParam) {
+		if withoutParam != "" && strings.EqualFold(k, withoutParam) {
 			continue
 		}
 		// Note: this is intentionally not escaped as the registry seems the expect the values as-is.
@@ -47,7 +47,7 @@ type OCIRawAuthenticationRequiredError struct {
 func (o OCIRawAuthenticationRequiredError) GetAuthSchemes(authScheme string) []OCIRawAuthScheme {
 	var result []OCIRawAuthScheme
 	for _, scheme := range o.AuthSchemes {
-		if strings.ToLower(scheme.Type) == strings.ToLower(authScheme) {
+		if strings.EqualFold(scheme.Type, authScheme) {
 			result = append(result, scheme)
 		}
 	}

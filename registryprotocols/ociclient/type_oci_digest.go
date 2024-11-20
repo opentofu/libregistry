@@ -23,7 +23,7 @@ func (o OCIDigest) Validate() error {
 }
 
 func (o OCIDigest) Equals(digest OCIDigest) bool {
-	return strings.ToLower(string(o)) == strings.ToLower(string(digest))
+	return strings.EqualFold(string(o), string(digest))
 }
 
 var _ validatable = OCIDigest("")
