@@ -16,6 +16,22 @@ type OCIClient interface {
 		addr OCIAddr,
 	) ([]OCIReference, OCIWarnings, error)
 
+	// GetImageMetadata resolves the metadata related to a reference and returns it. You can use this metadata to pull
+	// the image later.
+	GetImageMetadata(
+		ctx context.Context,
+		addr OCIAddrWithReference,
+		opts ...ClientPullOpt,
+	) (OCIImageMetadata, OCIWarnings, error)
+
+	// PullImageWithMetadata implements pulling an image based on the already-existing metadata and returning its
+	// contents. Make sure you call Close() on the returned image when you are done using it as this will clean up the
+	// temporary files.
+	PullImageWithMetadata(
+		ctx context.Context,
+		metadata OCIImageMetadata,
+	) (PulledOCIImage, OCIWarnings, error)
+
 	// PullImage implements pulling an image and returning its contents. Make sure you call Close() on the returned
 	// image when you are done using it as this will clean up the temporary files.
 	PullImage(
