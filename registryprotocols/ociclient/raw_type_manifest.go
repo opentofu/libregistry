@@ -7,4 +7,6 @@ package ociclient
 
 type OCIRawManifest interface {
 	GetMediaType() OCIRawMediaType
+	AsIndexManifest() (OCIRawImageIndexManifest, bool)
+	AsImageManifest() (OCIRawImageManifest, bool)
 }

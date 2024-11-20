@@ -19,6 +19,14 @@ type OCIRawImageManifest struct {
 	Annotations   OCIRawAnnotations  `json:"annotations,omitempty"`
 }
 
+func (o OCIRawImageManifest) AsIndexManifest() (OCIRawImageIndexManifest, bool) {
+	return OCIRawImageIndexManifest{}, false
+}
+
+func (o OCIRawImageManifest) AsImageManifest() (OCIRawImageManifest, bool) {
+	return o, true
+}
+
 func (o OCIRawImageManifest) GetMediaType() OCIRawMediaType {
 	return o.MediaType
 }

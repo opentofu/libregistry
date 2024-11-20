@@ -27,7 +27,7 @@ type InvalidOCIReferenceError struct {
 // Error returns a human-readable error message.
 func (i InvalidOCIReferenceError) Error() string {
 	if i.Reason != "" {
-		return "Invalid OCI reference: " + string(i.OCIReference) + "(" + i.Reason + ")"
+		return "Invalid OCI reference: " + string(i.OCIReference) + " (" + i.Reason + ")"
 	}
 	return "Invalid OCI reference: " + string(i.OCIReference)
 }

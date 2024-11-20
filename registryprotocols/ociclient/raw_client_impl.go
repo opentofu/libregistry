@@ -98,10 +98,10 @@ func (r *rawClient) GetManifest(
 
 	endpoint := fmt.Sprintf("https://%s/v2/%s/manifests/%s", addrRef.Registry, addrRef.Name, addrRef.Reference)
 	accept := []string{
-		"application/vnd.oci.image.index.v1+json",
-		"application/vnd.docker.distribution.manifest.list.v2+json",
-		"application/vnd.oci.image.manifest.v1+json",
-		"application/vnd.docker.distribution.manifest.v2+json",
+		string(MediaTypeDockerImage),
+		string(MediaTypeDockerImageList),
+		string(MediaTypeOCIImage),
+		string(MediaTypeOCIImageIndex),
 	}
 	response, warnings, err := getWithAuthentication(ctx, r, addrRef.OCIAddr, endpoint, accept)
 	if err != nil {
@@ -113,14 +113,14 @@ func (r *rawClient) GetManifest(
 
 	var result OCIRawManifest
 	contentType := response.Header.Get("Content-Type")
-	switch contentType {
-	case "application/vnd.oci.image.index.v1+json":
+	switch OCIRawMediaType(contentType) {
+	case MediaTypeOCIImageIndex:
 		fallthrough
-	case "application/vnd.docker.distribution.manifest.list.v2+json":
+	case MediaTypeDockerImageList:
 		result = &OCIRawImageIndexManifest{}
-	case "application/vnd.oci.image.manifest.v1+json":
+	case MediaTypeOCIImage:
 		fallthrough
-	case "application/vnd.docker.distribution.manifest.v2+json":
+	case MediaTypeDockerImage:
 		result = &OCIRawImageManifest{}
 	default:
 		return nil, warnings, fmt.Errorf("protocol error: the OCI registry server ignored the Accept header")
@@ -232,12 +232,12 @@ func getWithAuthentication(
 		// We are storing the credentials we just obtained so we don't have to re-authenticate again.
 		creds.Bearer = &authResponse
 		warnings = append(warnings, newWarnings...)
+		r.logger.Debug(ctx, "Authentication for %s successful on realm %s, retrying previous request.", endpoint, realm)
 
 		response, newWarnings, err = tryRequest(ctx, r, addr, endpoint, accept)
 		warnings = append(warnings, newWarnings...)
 		if err == nil {
 			// We don't close the response on purpose so the caller can use it.
-			r.logger.Debug(ctx, "Authentication for %s successful on realm %s.", endpoint, realm)
 			return response, warnings, err
 		}
 		r.logger.Debug(ctx, "Authentication for %s failed on realm %s, trying next authentication method... (%v)", endpoint, realm, err)
@@ -303,6 +303,7 @@ func getRequest(
 	switch {
 	case resp.StatusCode > 199 && resp.StatusCode < 300:
 		// We don't close the body here so the caller can use it.
+		r.logger.Trace(ctx, "Request to %s successful.", endpoint)
 		return resp, warnings, nil
 	case resp.StatusCode == 401 || resp.StatusCode == 403:
 		// We treat the 401 and 403 the same, even though it's not entirely RFC-conformant because some registries,
@@ -327,6 +328,7 @@ func getRequest(
 			// without a cause.
 			r.logger.Trace(ctx, "Cannot decode JSON error response from %s. (%v)", endpoint, err)
 		}
+		r.logger.Trace(ctx, "Request to %s returned an authentication failure.", endpoint)
 		return nil, warnings, newOCIRawAuthenticationRequiredError(
 			endpoint,
 			authSchemes,

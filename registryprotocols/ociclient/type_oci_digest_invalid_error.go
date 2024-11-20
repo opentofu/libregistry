@@ -28,13 +28,13 @@ type InvalidOCIDigestError struct {
 // Error returns a human-readable error message.
 func (i InvalidOCIDigestError) Error() string {
 	if i.Cause != nil && i.Reason != "" {
-		return "Invalid OCI digest: " + string(i.OCIDigest) + "(" + i.Reason + "; " + i.Cause.Error() + ")"
+		return "Invalid OCI digest: " + string(i.OCIDigest) + " (" + i.Reason + "; " + i.Cause.Error() + ")"
 	}
 	if i.Reason != "" {
-		return "Invalid OCI digest: " + string(i.OCIDigest) + "(" + i.Reason + ")"
+		return "Invalid OCI digest: " + string(i.OCIDigest) + " (" + i.Reason + ")"
 	}
 	if i.Cause != nil {
-		return "Invalid OCI digest: " + string(i.OCIDigest) + "(" + i.Cause.Error() + ")"
+		return "Invalid OCI digest: " + string(i.OCIDigest) + " (" + i.Cause.Error() + ")"
 	}
 	return "Invalid OCI digest " + string(i.OCIDigest)
 }

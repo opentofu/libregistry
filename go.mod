@@ -6,6 +6,7 @@ require (
 	github.com/ProtonMail/gopenpgp/v2 v2.7.4
 	github.com/opentofu/registry-address v0.0.0-20230922120653-901b9ae4061a
 	golang.org/x/mod v0.14.0
+	golang.org/x/sync v0.1.0
 )
 
 require (

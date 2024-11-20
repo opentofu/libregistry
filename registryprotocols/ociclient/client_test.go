@@ -21,11 +21,11 @@ func TestListReferences(t *testing.T) {
 		Registry: "ghcr.io",
 		Name:     "opentofu/opentofu",
 	})
-	if err != nil {
-		t.Fatalf("%v", err)
-	}
 	for _, warning := range warnings {
 		t.Logf("OCI registry warning: %s", warning)
+	}
+	if err != nil {
+		t.Fatalf("%v", err)
 	}
 	t.Logf("Found the following references: %v", references)
 	for _, ref := range references {
@@ -35,4 +35,51 @@ func TestListReferences(t *testing.T) {
 		}
 	}
 	t.Fatalf("Version 1.6.0 was not found in the version list.")
+}
+
+func TestPull(t *testing.T) {
+	client, err := ociclient.New(ociclient.WithLogger(logger.NewTestLogger(t)))
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	image, warnings, err := client.PullImage(
+		context.Background(),
+		ociclient.OCIAddrWithReference{
+			OCIAddr: ociclient.OCIAddr{
+				Registry: "ghcr.io",
+				Name:     "opentofu/opentofu",
+			},
+			Reference: "latest",
+		},
+		ociclient.WithGOOS("linux"),
+		ociclient.WithGOARCH("amd64"),
+	)
+	for _, warning := range warnings {
+		t.Logf("OCI registry warning: %s", warning)
+	}
+	if err != nil {
+		t.Fatalf("%v", err)
+	}
+	defer func() {
+		if err := image.Close(); err != nil {
+			t.Fatalf("%v", err)
+		}
+	}()
+	found := false
+	for {
+		ok, err := image.Next()
+		if err != nil {
+			t.Fatalf("%v", err)
+		}
+		if !ok {
+			break
+		}
+		t.Logf("Found file: %s", image.Filename())
+		if image.Filename() == "tofu" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("no tofu/tofu.exe found in downloaded image")
+	}
 }

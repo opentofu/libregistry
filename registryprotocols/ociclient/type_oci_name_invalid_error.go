@@ -27,7 +27,7 @@ type InvalidOCINameError struct {
 // Error returns a human-readable error message.
 func (i InvalidOCINameError) Error() string {
 	if i.Reason != "" {
-		return "Invalid OCI name: " + string(i.OCIName) + "(" + i.Reason + ")"
+		return "Invalid OCI name: " + string(i.OCIName) + " (" + i.Reason + ")"
 	}
 	return "Invalid OCI name: " + string(i.OCIName)
 }
