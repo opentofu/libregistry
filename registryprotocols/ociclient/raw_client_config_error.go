@@ -21,7 +21,7 @@ func (c RawConfigurationError) Unwrap() error {
 	return c.Cause
 }
 
-func newRawConfigurationError(message string, cause error) error {
+func newRawConfigurationError(message string, cause error) error { // nolint:unused // This is needed if RawConfigurationError will be used in the future.
 	return &RawConfigurationError{
 		Message: message,
 		Cause:   cause,

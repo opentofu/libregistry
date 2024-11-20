@@ -28,7 +28,7 @@ func (o OCIAddr) Validate() error {
 }
 
 func (o OCIAddr) ToScope() OCIScope {
-	return OCIScope{
+	return OCIScope{ //nolint:gosimple // This is intentionally explicit as the two structs are different for a reason.
 		Registry: o.Registry,
 		Name:     o.Name,
 	}
