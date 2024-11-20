@@ -202,6 +202,8 @@ func (o ociClient) PullImage(ctx context.Context, addrRef OCIAddrWithReference, 
 	return image, append(warnings, newWarnings...), err
 }
 
+// pulledOCIImage impements the PulledOCIImage interface to give access to downloaded layers.
+// TODO when files are overwritten or removed, this is currently not taken into account.
 type pulledOCIImage struct {
 	layers       []pulledLayer
 	currentLayer int
