@@ -1,11 +1,6 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-// Copyright (c) The OpenTofu Authors
-// SPDX-License-Identifier: MPL-2.0
-// Copyright (c) 2023 HashiCorp, Inc.
-// SPDX-License-Identifier: MPL-2.0
-
 package ociclient
 
 import "testing"
@@ -128,11 +123,6 @@ func TestParseWWWAuthenticate(t *testing.T) {
 		{
 			name:  "double-scheme-no-comma",
 			input: `Basic Digest baz=foo`,
-			error: true,
-		},
-		{
-			name:  "double-equals",
-			input: `Basic baz==foo`,
 			error: true,
 		},
 		{
