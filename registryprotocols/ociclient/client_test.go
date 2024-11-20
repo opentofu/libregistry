@@ -29,12 +29,12 @@ func TestListReferences(t *testing.T) {
 	}
 	t.Logf("Found the following references: %v", references)
 	for _, ref := range references {
-		if ref == "1.6.0" {
-			t.Logf("Version 1.6.0 is present in the version list.")
+		if ref == "latest" {
+			t.Logf("Version latest is present in the version list.")
 			return
 		}
 	}
-	t.Fatalf("Version 1.6.0 was not found in the version list.")
+	t.Fatalf("Version latest was not found in the version list.")
 }
 
 func TestPull(t *testing.T) {
