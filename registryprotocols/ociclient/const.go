@@ -3,7 +3,7 @@
 
 package ociclient
 
-const MediaTypeOCIImageIndex OCIRawMediaType = "application/vnd.oci.image.index.v1+json"
-const MediaTypeDockerImageList OCIRawMediaType = "application/vnd.docker.distribution.manifest.list.v2+json"
-const MediaTypeOCIImage OCIRawMediaType = "application/vnd.oci.image.manifest.v1+json"
-const MediaTypeDockerImage OCIRawMediaType = "application/vnd.docker.distribution.manifest.v2+json"
+const MediaTypeOCIImageIndex OCIMediaType = "application/vnd.oci.image.index.v1+json"
+const MediaTypeDockerImageList OCIMediaType = "application/vnd.docker.distribution.manifest.list.v2+json"
+const MediaTypeOCIImage OCIMediaType = "application/vnd.oci.image.manifest.v1+json"
+const MediaTypeDockerImage OCIMediaType = "application/vnd.docker.distribution.manifest.v2+json"

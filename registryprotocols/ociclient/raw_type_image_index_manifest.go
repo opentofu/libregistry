@@ -11,8 +11,8 @@ package ociclient
 // For details see https://github.com/opencontainers/image-spec/blob/v1.0.1/image-index.md and
 // https://github.com/openshift/docker-distribution/blob/master/docs/spec/manifest-v2-2.md#manifest-list
 type OCIRawImageIndexManifest struct {
-	SchemaVersion int             `json:"schemaVersion"`
-	MediaType     OCIRawMediaType `json:"mediaType"`
+	SchemaVersion int          `json:"schemaVersion"`
+	MediaType     OCIMediaType `json:"mediaType"`
 	Manifests     []struct {
 		OCIRawDescriptor
 		Platform struct {
@@ -38,7 +38,7 @@ func (o OCIRawImageIndexManifest) AsImageManifest() (OCIRawImageManifest, bool) 
 	return OCIRawImageManifest{}, false
 }
 
-func (o OCIRawImageIndexManifest) GetMediaType() OCIRawMediaType {
+func (o OCIRawImageIndexManifest) GetMediaType() OCIMediaType {
 	return o.MediaType
 }
 

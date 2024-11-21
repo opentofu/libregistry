@@ -11,7 +11,7 @@ package ociclient
 // https://github.com/openshift/docker-distribution/blob/master/docs/spec/manifest-v2-2.md#image-manifest
 type OCIRawImageManifest struct {
 	SchemaVersion int                `json:"schemaVersion"`
-	MediaType     OCIRawMediaType    `json:"mediaType,omitempty"`
+	MediaType     OCIMediaType       `json:"mediaType,omitempty"`
 	Config        OCIRawDescriptor   `json:"config"`
 	Layers        []OCIRawDescriptor `json:"layers"`
 	Annotations   OCIRawAnnotations  `json:"annotations,omitempty"`
@@ -25,7 +25,7 @@ func (o OCIRawImageManifest) AsImageManifest() (OCIRawImageManifest, bool) {
 	return o, true
 }
 
-func (o OCIRawImageManifest) GetMediaType() OCIRawMediaType {
+func (o OCIRawImageManifest) GetMediaType() OCIMediaType {
 	return o.MediaType
 }
 

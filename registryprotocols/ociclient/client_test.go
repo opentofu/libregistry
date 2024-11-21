@@ -45,9 +45,9 @@ func TestPull(t *testing.T) {
 		ociclient.OCIAddrWithReference{
 			OCIAddr: ociclient.OCIAddr{
 				Registry: "ghcr.io",
-				Name:     "opentofu/opentofu",
+				Name:     "apparentlymart/opentofu-provider-assume",
 			},
-			Reference: "latest",
+			Reference: "0.1.0",
 		},
 		ociclient.WithGOOS("linux"),
 		ociclient.WithGOARCH("amd64"),
@@ -73,11 +73,11 @@ func TestPull(t *testing.T) {
 			break
 		}
 		t.Logf("Found file: %s", image.Filename())
-		if image.Filename() == "usr/local/bin/tofu" {
+		if image.Filename() == "opentofu-provider-assume_v0.1.0" {
 			found = true
 		}
 	}
 	if !found {
-		t.Fatalf("no tofu found in downloaded image")
+		t.Fatalf("no provider found in downloaded image")
 	}
 }

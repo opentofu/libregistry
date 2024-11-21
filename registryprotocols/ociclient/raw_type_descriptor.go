@@ -6,7 +6,7 @@ package ociclient
 // OCIRawDescriptor describes the generic content descriptor data structure.
 // For details see https://github.com/opencontainers/image-spec/blob/v1.0.1/descriptor.md
 type OCIRawDescriptor struct {
-	MediaType   OCIRawMediaType   `json:"mediaType"`
+	MediaType   OCIMediaType      `json:"mediaType"`
 	Digest      OCIDigest         `json:"digest"`
 	Size        int64             `json:"size"`
 	URLs        []string          `json:"urls,omitempty"`

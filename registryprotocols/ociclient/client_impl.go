@@ -77,12 +77,15 @@ func (o ociClient) GetImageMetadata(ctx context.Context, addrRef OCIAddrWithRefe
 	if !ok {
 		indexManifest, ok := mainManifest.AsIndexManifest()
 		if ok {
+			o.logger.Trace(ctx, "Found multi-arch index manifest for %s matching %s / %s", addrRef, pullConfig.GOOS, pullConfig.GOARCH, addrRef)
 			var platform *OCIRawDescriptor
 			for _, platformManifest := range indexManifest.Manifests {
+				platformManifest := platformManifest
 				if platformManifest.Platform.OS == pullConfig.GOOS &&
 					platformManifest.Platform.Architecture == pullConfig.GOARCH &&
 					(platformManifest.MediaType == MediaTypeDockerImage || platformManifest.MediaType == MediaTypeOCIImage) {
 					platform = &platformManifest.OCIRawDescriptor
+					break
 				}
 			}
 			if platform == nil {
@@ -127,7 +130,7 @@ func (o ociClient) PullImageWithMetadata(ctx context.Context, metadata OCIImageM
 	if err := addrRef.Validate(); err != nil {
 		return nil, nil, err
 	}
-	o.logger.Trace(ctx, "Downloading %d layers...", addrRef, len(layers))
+	o.logger.Trace(ctx, "Downloading %d layers for %s...", len(layers), addrRef)
 	errGroup, errGroupCtx := errgroup.WithContext(ctx)
 	errGroup.SetLimit(6)
 	lock := &sync.Mutex{}

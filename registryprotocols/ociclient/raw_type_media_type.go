@@ -3,4 +3,4 @@
 
 package ociclient
 
-type OCIRawMediaType string
+type OCIMediaType string

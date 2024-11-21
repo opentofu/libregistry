@@ -111,7 +111,7 @@ func (r *rawClient) GetManifest(
 
 	var result OCIRawManifest
 	contentType := response.Header.Get("Content-Type")
-	switch OCIRawMediaType(contentType) {
+	switch OCIMediaType(contentType) {
 	case MediaTypeOCIImageIndex:
 		fallthrough
 	case MediaTypeDockerImageList:
@@ -150,7 +150,7 @@ func (r *rawClient) GetBlob(
 	}
 	return OCIRawBlob{
 		response.Body,
-		OCIRawMediaType(response.Header.Get("Content-Type")),
+		OCIMediaType(response.Header.Get("Content-Type")),
 	}, warnings, nil
 }
 

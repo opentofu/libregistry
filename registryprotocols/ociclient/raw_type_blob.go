@@ -9,5 +9,5 @@ import "io"
 type OCIRawBlob struct {
 	io.ReadCloser
 
-	ContentType OCIRawMediaType
+	ContentType OCIMediaType
 }
