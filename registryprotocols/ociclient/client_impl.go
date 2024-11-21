@@ -45,25 +45,25 @@ func (o ociClient) ListReferences(ctx context.Context, addr OCIAddr) ([]OCIRefer
 	return response.Tags, warnings, err
 }
 
-func (o ociClient) GetImageMetadata(ctx context.Context, addrRef OCIAddrWithReference, opts ...ClientPullOpt) (OCIImageMetadata, OCIWarnings, error) {
+func (o ociClient) ResolvePlatformImageDigest(ctx context.Context, addrRef OCIAddrWithReference, opts ...ClientPullOpt) (OCIDigest, OCIWarnings, error) {
 	if err := addrRef.Validate(); err != nil {
-		return OCIImageMetadata{}, nil, err
+		return "", nil, err
 	}
 
 	pullConfig := ClientPullConfig{}
 	for _, opt := range opts {
 		if err := opt(&pullConfig); err != nil {
-			return OCIImageMetadata{}, nil, err
+			return "", nil, err
 		}
 	}
 	if err := pullConfig.ApplyDefaultsAndValidate(); err != nil {
-		return OCIImageMetadata{}, nil, err
+		return "", nil, err
 	}
 
-	o.logger.Debug(ctx, "Pulling image %s...", addrRef)
+	o.logger.Debug(ctx, "Resolving image digest for %s...", addrRef)
 	warnings, err := o.rawClient.Check(ctx, addrRef.Registry)
 	if err != nil {
-		return OCIImageMetadata{}, warnings, err
+		return "", warnings, err
 	}
 
 	o.logger.Trace(ctx, "Getting main manifest for %s...", addrRef)
@@ -71,62 +71,58 @@ func (o ociClient) GetImageMetadata(ctx context.Context, addrRef OCIAddrWithRefe
 	warnings = append(warnings, newWarnings...)
 	if err != nil {
 		o.logger.Trace(ctx, "Getting main manifest for %s failed. (%v)", addrRef, err)
-		return OCIImageMetadata{}, warnings, err
+		return "", warnings, err
+	}
+	indexManifest, ok := mainManifest.AsIndexManifest()
+	if !ok {
+		o.logger.Trace(ctx, "Main manifest for %s is not an image or index manifest, %s found instead.", addrRef, mainManifest.GetMediaType())
+		return "", warnings, fmt.Errorf("main manifest for %s is not an image or index manifest (%s found instead)", addrRef, mainManifest.GetMediaType())
+	}
+	o.logger.Trace(ctx, "Found multi-arch index manifest for %s, searching for a platform image for %s / %s", addrRef, pullConfig.GOOS, pullConfig.GOARCH, addrRef)
+	var platform *OCIRawDescriptor
+	for _, platformManifest := range indexManifest.Manifests {
+		platformManifest := platformManifest
+		if platformManifest.Platform.OS == pullConfig.GOOS &&
+			platformManifest.Platform.Architecture == pullConfig.GOARCH &&
+			(platformManifest.MediaType == MediaTypeDockerImage || platformManifest.MediaType == MediaTypeOCIImage) {
+			platform = &platformManifest.OCIRawDescriptor
+			break
+		}
+	}
+	if platform == nil {
+		// TODO typed error
+		o.logger.Trace(ctx, "No suitable image found for GOOS %s and GOARCH %s in %s", pullConfig.GOOS, pullConfig.GOARCH, addrRef)
+		return "", warnings, fmt.Errorf("no suitable image found for GOOS %s and GOARCH %s in %s", pullConfig.GOOS, pullConfig.GOARCH, addrRef)
+	}
+	return platform.Digest, warnings, nil
+}
+
+func (o ociClient) PullImageWithImageDigest(ctx context.Context, addrRef OCIAddrWithDigest) (PulledOCIImage, OCIWarnings, error) {
+	if err := addrRef.Validate(); err != nil {
+		return nil, nil, err
+	}
+
+	o.logger.Debug(ctx, "Pulling image %s...", addrRef)
+	warnings, err := o.rawClient.Check(ctx, addrRef.Registry)
+	if err != nil {
+		return nil, warnings, err
+	}
+
+	o.logger.Trace(ctx, "Getting main manifest for %s...", addrRef)
+	mainManifest, newWarnings, err := o.rawClient.GetManifest(ctx, OCIAddrWithReference{
+		OCIAddr:   addrRef.OCIAddr,
+		Reference: OCIReference(addrRef.Digest),
+	})
+	warnings = append(warnings, newWarnings...)
+	if err != nil {
+		o.logger.Trace(ctx, "Getting main manifest for %s failed. (%v)", addrRef, err)
+		return nil, warnings, err
 	}
 	imageManifest, ok := mainManifest.AsImageManifest()
 	if !ok {
-		indexManifest, ok := mainManifest.AsIndexManifest()
-		if ok {
-			o.logger.Trace(ctx, "Found multi-arch index manifest for %s matching %s / %s", addrRef, pullConfig.GOOS, pullConfig.GOARCH, addrRef)
-			var platform *OCIRawDescriptor
-			for _, platformManifest := range indexManifest.Manifests {
-				platformManifest := platformManifest
-				if platformManifest.Platform.OS == pullConfig.GOOS &&
-					platformManifest.Platform.Architecture == pullConfig.GOARCH &&
-					(platformManifest.MediaType == MediaTypeDockerImage || platformManifest.MediaType == MediaTypeOCIImage) {
-					platform = &platformManifest.OCIRawDescriptor
-					break
-				}
-			}
-			if platform == nil {
-				// TODO typed error
-				o.logger.Trace(ctx, "No suitable image found for GOOS %s and GOARCH %s in %s", pullConfig.GOOS, pullConfig.GOARCH, addrRef)
-				return OCIImageMetadata{}, warnings, fmt.Errorf("no suitable image found for GOOS %s and GOARCH %s in %s", pullConfig.GOOS, pullConfig.GOARCH, addrRef)
-			}
-			platformManifest, newWarnings, err := o.rawClient.GetManifest(ctx, OCIAddrWithReference{
-				addrRef.OCIAddr,
-				OCIReference(platform.Digest),
-			})
-			warnings = append(warnings, newWarnings...)
-			if err != nil {
-				// TODO typed error
-				o.logger.Trace(ctx, "Getting the manifest %s for %s failed. (%v)", platform.Digest, addrRef, err)
-				return OCIImageMetadata{}, warnings, err
-			}
-			imageManifest, ok = platformManifest.AsImageManifest()
-			if !ok {
-				// TODO typed error
-				o.logger.Trace(ctx, "protocol error: the platform manifest %s for %s did not point to an image manifest", platform.Digest, addrRef)
-				return OCIImageMetadata{}, warnings, fmt.Errorf("protocol error: the platform manifest %s for %s did not point to an image manifest", platform.Digest, addrRef)
-			}
-		} else {
-			o.logger.Trace(ctx, "Main manifest for %s is not an image or index manifest, %s found instead.", addrRef, mainManifest.GetMediaType())
-			return OCIImageMetadata{}, warnings, fmt.Errorf("main manifest for %s is not an image or index manifest (%s found instead)", addrRef, mainManifest.GetMediaType())
-		}
+		return nil, warnings, fmt.Errorf("the specified digest does not point to an image manifest")
 	}
-
-	result := OCIImageMetadata{
-		Addr: addrRef,
-	}
-	for _, layer := range imageManifest.Layers {
-		result.Layers = append(result.Layers, layer.Digest)
-	}
-	return result, warnings, nil
-}
-
-func (o ociClient) PullImageWithMetadata(ctx context.Context, metadata OCIImageMetadata) (PulledOCIImage, OCIWarnings, error) {
-	addrRef := metadata.Addr
-	layers := metadata.Layers
+	layers := imageManifest.Layers
 	if err := addrRef.Validate(); err != nil {
 		return nil, nil, err
 	}
@@ -138,20 +134,19 @@ func (o ociClient) PullImageWithMetadata(ctx context.Context, metadata OCIImageM
 		layers:       nil,
 		currentLayer: -1,
 	}
-	warnings := OCIWarnings{}
 	for _, layer := range layers {
 		layer := layer
 		// Note: we need to replace colons with underscores here because Windows doesn't support them in filenames.
-		fn := path.Join(o.tempDirectory, strings.ReplaceAll(string(layer), ":", "_")+".tar.gz")
+		fn := path.Join(o.tempDirectory, strings.ReplaceAll(string(layer.Digest), ":", "_")+".tar.gz")
 		result.layers = append(result.layers, pulledLayer{
-			digest:   layer,
+			digest:   layer.Digest,
 			tempFile: fn,
 		})
 		errGroup.Go(func() error {
 			o.logger.Trace(ctx, "Downloading %s layer %s...", addrRef, layer)
 			blob, newWarnings, err := o.rawClient.GetBlob(errGroupCtx, OCIAddrWithDigest{
 				addrRef.OCIAddr,
-				layer,
+				layer.Digest,
 			})
 			lock.Lock()
 			warnings = append(warnings, newWarnings...)
@@ -159,23 +154,23 @@ func (o ociClient) PullImageWithMetadata(ctx context.Context, metadata OCIImageM
 			if err != nil {
 				// TODO typed error
 				o.logger.Trace(ctx, "Failed to pull %s layer %s. (%v)", addrRef, layer, err)
-				return fmt.Errorf("failed to pull layer %s (%w)", layer, err)
+				return fmt.Errorf("failed to pull layer %s (%w)", layer.Digest, err)
 			}
 			fh, err := os.Create(fn)
 			if err != nil {
 				// TODO typed error
 				o.logger.Trace(ctx, "Failed to create temporary file %s for %s layer %s. (%v)", fn, addrRef, layer, err)
-				return fmt.Errorf("failed to create temporary file %s for layer %s (%w)", fn, layer, err)
+				return fmt.Errorf("failed to create temporary file %s for layer %s (%w)", fn, layer.Digest, err)
 			}
 			if _, err := io.Copy(fh, blob); err != nil {
 				// TODO typed error
 				o.logger.Trace(ctx, "Failed to write temporary file %s for %s layer %s. (%v)", fn, addrRef, layer, err)
-				return fmt.Errorf("failed to write temporary file %s for layer %s (%w)", fn, layer, err)
+				return fmt.Errorf("failed to write temporary file %s for layer %s (%w)", fn, layer.Digest, err)
 			}
 			if err := fh.Close(); err != nil {
 				// TODO typed error
 				o.logger.Trace(ctx, "Failed to close temporary file %s for %s layer %s. (%v)", fn, addrRef, layer, err)
-				return fmt.Errorf("failed to close temporary file %s for layer %s (%w)", fn, layer, err)
+				return fmt.Errorf("failed to close temporary file %s for layer %s (%w)", fn, layer.Digest, err)
 			}
 			o.logger.Trace(ctx, "Downloading %s layer %s complete.", addrRef, layer)
 			return nil
@@ -197,15 +192,18 @@ func (o ociClient) PullImageWithMetadata(ctx context.Context, metadata OCIImageM
 }
 
 func (o ociClient) PullImage(ctx context.Context, addrRef OCIAddrWithReference, opts ...ClientPullOpt) (PulledOCIImage, OCIWarnings, error) {
-	metadata, warnings, err := o.GetImageMetadata(ctx, addrRef, opts...)
+	digest, warnings, err := o.ResolvePlatformImageDigest(ctx, addrRef, opts...)
 	if err != nil {
 		return nil, warnings, err
 	}
-	image, newWarnings, err := o.PullImageWithMetadata(ctx, metadata)
+	image, newWarnings, err := o.PullImageWithImageDigest(ctx, OCIAddrWithDigest{
+		OCIAddr: addrRef.OCIAddr,
+		Digest:  digest,
+	})
 	return image, append(warnings, newWarnings...), err
 }
 
-// pulledOCIImage impements the PulledOCIImage interface to give access to downloaded layers.
+// pulledOCIImage implements the PulledOCIImage interface to give access to downloaded layers.
 // TODO when files are overwritten or removed, this is currently not taken into account.
 type pulledOCIImage struct {
 	layers       []pulledLayer

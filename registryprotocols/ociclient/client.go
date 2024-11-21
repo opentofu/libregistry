@@ -16,20 +16,19 @@ type OCIClient interface {
 		addr OCIAddr,
 	) ([]OCIReference, OCIWarnings, error)
 
-	// GetImageMetadata resolves the metadata related to a reference and returns it. You can use this metadata to pull
-	// the image later.
-	GetImageMetadata(
+	// ResolvePlatformImageDigest resolves a platform-specific image manifest digest. You can use this digest to pull
+	// the image using the digest only.
+	ResolvePlatformImageDigest(
 		ctx context.Context,
 		addr OCIAddrWithReference,
 		opts ...ClientPullOpt,
-	) (OCIImageMetadata, OCIWarnings, error)
+	) (OCIDigest, OCIWarnings, error)
 
-	// PullImageWithMetadata implements pulling an image based on the already-existing metadata and returning its
-	// contents. Make sure you call Close() on the returned image when you are done using it as this will clean up the
-	// temporary files.
-	PullImageWithMetadata(
+	// PullImageWithImageDigest implements pulling an image with a platform-specific image digest. Make sure you call
+	// Close() on the returned image when you are done using it as this will clean up the temporary files.
+	PullImageWithImageDigest(
 		ctx context.Context,
-		metadata OCIImageMetadata,
+		addrRef OCIAddrWithDigest,
 	) (PulledOCIImage, OCIWarnings, error)
 
 	// PullImage implements pulling an image and returning its contents. Make sure you call Close() on the returned
