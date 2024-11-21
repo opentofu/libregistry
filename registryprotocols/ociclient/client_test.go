@@ -73,7 +73,7 @@ func TestPull(t *testing.T) {
 			break
 		}
 		t.Logf("Found file: %s", image.Filename())
-		if image.Filename() == "opentofu-provider-assume_v0.1.0" {
+		if image.Filename() == "terraform-provider-assume_v0.1.0" {
 			found = true
 		}
 	}
