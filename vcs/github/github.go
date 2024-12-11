@@ -295,24 +295,27 @@ func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) e
 	// condition or inadequate cleanup.
 	tries := 0
 	const maxTries = 10
-	for {
-		err := w.g.git(ctx, w.dir, nil, "checkout", string(version))
-		if err == nil {
-			w.version = version
-			return nil
-		}
+	handleVersionNotFound := func(err error) error {
 		// Checkout failed, see if tag exists.
 		tagExists, e := w.tagExists(ctx, version)
 		if e == nil && !tagExists {
 			return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
 		}
 
+		return err
+	}
+	for {
+		err := w.g.git(ctx, w.dir, nil, "checkout", string(version))
+		if err == nil {
+			w.version = version
+			return nil
+		}
 		var exitErr *exec.ExitError
 		if !errors.As(err, &exitErr) {
-			return err
+			return handleVersionNotFound(err)
 		}
 		if exitErr.ExitCode() != 128 {
-			return err
+			return handleVersionNotFound(err)
 		}
 		tries += 1
 		if tries > maxTries {
