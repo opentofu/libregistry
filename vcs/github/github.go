@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/opentofu/libregistry/internal/retry"
 	"io"
 	"io/fs"
 	"net/http"
@@ -290,104 +291,63 @@ func (w *workingCopy) Close() error {
 	return nil
 }
 
-func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
-	// We are implementing a retry here because git seems to have issues on GitHub Actions, possibly due to a race
-	// condition or inadequate cleanup.
-	tries := 0
-	const maxTries = 10
-	handleVersionNotFound := func(err error) error {
-		// Checkout failed, see if tag exists.
-		tagExists, e := w.tagExists(ctx, version)
-		if e == nil && !tagExists {
-			return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
-		}
+func is128Retryable(err error) bool {
+	var exitErr *exec.ExitError
+	return errors.As(err, &exitErr) && exitErr.ExitCode() == 128
+}
 
+func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
+	if err := retry.Func(
+		ctx,
+		"git checkout "+string(version),
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "checkout", string(version))
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	); err != nil {
+		if !is128Retryable(err) {
+			// Checkout failed, see if tag exists.
+			tagExists, e := w.tagExists(ctx, version)
+			if e == nil && !tagExists {
+				return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
+			}
+
+		}
 		return err
 	}
-	for {
-		err := w.g.git(ctx, w.dir, nil, "checkout", string(version))
-		if err == nil {
-			w.version = version
-			return nil
-		}
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			return handleVersionNotFound(err)
-		}
-		if exitErr.ExitCode() != 128 {
-			return handleVersionNotFound(err)
-		}
-		tries += 1
-		if tries > maxTries {
-			return fmt.Errorf("git checkout exited with a 128 error code %d times in a row, aborting (%w)", maxTries, err)
-		}
-		select {
-		case <-ctx.Done():
-			return err
-		case <-time.After(100 * time.Millisecond):
-			w.g.config.Logger.Debug(ctx, "git checkout exited with a 128 error code, retrying...")
-		}
-	}
+	w.version = version
+	return nil
 }
 
 func (w *workingCopy) reset(ctx context.Context) error {
-	// We are implementing a retry here because git seems to have issues on GitHub Actions, possibly due to a race
-	// condition or inadequate cleanup.
-	tries := 0
-	const maxTries = 10
-	for {
-		err := w.g.git(ctx, w.dir, nil, "reset", "--hard")
-		if err == nil {
-			return nil
-		}
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			return err
-		}
-		if exitErr.ExitCode() != 128 {
-			return err
-		}
-		tries += 1
-		if tries > maxTries {
-			return fmt.Errorf("git reset --hard exited with a 128 error code %d times in a row, aborting (%w)", maxTries, err)
-		}
-		select {
-		case <-ctx.Done():
-			return err
-		case <-time.After(100 * time.Millisecond):
-			w.g.config.Logger.Debug(ctx, "git reset --hard exited with a 128 error code, retrying...")
-		}
-	}
+	return retry.Func(
+		ctx,
+		"git reset --hard",
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "reset", "--hard")
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
 }
 
 func (w *workingCopy) clean(ctx context.Context) error {
-	// We are implementing a retry here because git seems to have issues on GitHub Actions, possibly due to a race
-	// condition or inadequate cleanup.
-	tries := 0
-	const maxTries = 10
-	for {
-		err := w.g.git(ctx, w.dir, nil, "clean", "-fd")
-		if err == nil {
-			return nil
-		}
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			return err
-		}
-		if exitErr.ExitCode() != 128 {
-			return err
-		}
-		tries += 1
-		if tries > maxTries {
-			return fmt.Errorf("git clean -fd exited with a 128 error code %d times in a row, aborting (%w)", maxTries, err)
-		}
-		select {
-		case <-ctx.Done():
-			return err
-		case <-time.After(100 * time.Millisecond):
-			w.g.config.Logger.Debug(ctx, "git clean -fd exited with a 128 error code, retrying...")
-		}
-	}
+	return retry.Func(
+		ctx,
+		"git clean -fd",
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "clean", "-fd")
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
 }
 
 func (w *workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
@@ -455,34 +415,19 @@ func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 }
 
 func (w *workingCopy) listRefs(ctx context.Context) (*bytes.Buffer, error) {
-	// We are implementing a retry here because git seems to have issues on GitHub Actions, possibly due to a race
-	// condition or inadequate cleanup.
-	tries := 0
-	const maxTries = 10
-	for {
-		stdout := &bytes.Buffer{}
-		err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*")
-		if err == nil {
-			return stdout, nil
-		}
-		var exitErr *exec.ExitError
-		if !errors.As(err, &exitErr) {
-			return nil, err
-		}
-		if exitErr.ExitCode() != 128 {
-			return nil, err
-		}
-		tries += 1
-		if tries > maxTries {
-			return nil, fmt.Errorf("git for-each-ref exited with a 128 error code %d times in a row, aborting (%w)", maxTries, err)
-		}
-		select {
-		case <-ctx.Done():
-			return nil, err
-		case <-time.After(100 * time.Millisecond):
-			w.g.config.Logger.Debug(ctx, "git for-each-ref exited with a 128 error code, retrying...")
-		}
-	}
+	return retry.Func2(
+		ctx,
+		"git for-each-ref",
+		func() (*bytes.Buffer, error) {
+			stdout := &bytes.Buffer{}
+			err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*")
+			return stdout, err
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
 }
 
 func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ...string) error {
