@@ -10,6 +10,7 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
+	"github.com/opentofu/libregistry/internal/retry"
 	"io"
 	"io/fs"
 	"net/http"
@@ -21,6 +22,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/opentofu/libregistry/logger"
@@ -289,14 +291,31 @@ func (w *workingCopy) Close() error {
 	return nil
 }
 
-func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
-	if err := w.g.git(ctx, w.dir, nil, "checkout", string(version)); err != nil {
-		// Checkout failed, see if tag exists.
-		tagExists, e := w.tagExists(ctx, version)
-		if e == nil && !tagExists {
-			return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
-		}
+func is128Retryable(err error) bool {
+	var exitErr *exec.ExitError
+	return errors.As(err, &exitErr) && exitErr.ExitCode() == 128
+}
 
+func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) error {
+	if err := retry.Func(
+		ctx,
+		"git checkout "+string(version),
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "checkout", string(version))
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	); err != nil {
+		if !is128Retryable(err) {
+			// Checkout failed, see if tag exists.
+			tagExists, e := w.tagExists(ctx, version)
+			if e == nil && !tagExists {
+				return &vcs.VersionNotFoundError{Version: version, RepositoryAddr: w.repository, Cause: err}
+			}
+
+		}
 		return err
 	}
 	w.version = version
@@ -304,11 +323,31 @@ func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) e
 }
 
 func (w *workingCopy) reset(ctx context.Context) error {
-	return w.g.git(ctx, w.dir, nil, "reset", "--hard")
+	return retry.Func(
+		ctx,
+		"git reset --hard",
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "reset", "--hard")
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
 }
 
 func (w *workingCopy) clean(ctx context.Context) error {
-	return w.g.git(ctx, w.dir, nil, "clean", "-fd")
+	return retry.Func(
+		ctx,
+		"git clean -fd",
+		func() error {
+			return w.g.git(ctx, w.dir, nil, "clean", "-fd")
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
 }
 
 func (w *workingCopy) tagExists(ctx context.Context, version vcs.VersionNumber) (bool, error) {
@@ -341,8 +380,8 @@ func (w *workingCopy) getTag(ctx context.Context, tag vcs.VersionNumber) (vcs.Ve
 }
 
 func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
-	stdout := &bytes.Buffer{}
-	if err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*"); err != nil {
+	stdout, err := w.listRefs(ctx)
+	if err != nil {
 		return nil, err
 	}
 	lines := strings.Split(stdout.String(), "\n")
@@ -375,6 +414,22 @@ func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 	return result, nil
 }
 
+func (w *workingCopy) listRefs(ctx context.Context) (*bytes.Buffer, error) {
+	return retry.Func2(
+		ctx,
+		"git for-each-ref",
+		func() (*bytes.Buffer, error) {
+			stdout := &bytes.Buffer{}
+			err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*")
+			return stdout, err
+		},
+		is128Retryable,
+		10,
+		100*time.Millisecond,
+		w.g.config.Logger,
+	)
+}
+
 func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ...string) error {
 	cmd := exec.Command(g.config.GitPath, params...)
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
@@ -398,7 +453,12 @@ func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ..
 	select {
 	case <-done:
 	case <-ctx.Done():
-		_ = cmd.Process.Kill()
+		_ = cmd.Process.Signal(syscall.SIGTERM)
+		select {
+		case <-time.After(30 * time.Second):
+			_ = cmd.Process.Kill()
+		case <-done:
+		}
 		<-done
 	}
 	if lastErr == nil {
