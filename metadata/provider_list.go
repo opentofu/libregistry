@@ -20,6 +20,8 @@ func (r registryDataAPI) ListProviders(ctx context.Context, includeAliases bool)
 		return nil, fmt.Errorf("failed to list '%s' directory (%w)", providersDirectory, err)
 	}
 
+	fmt.Printf("Provider Letters %s\n", providerLetters)
+
 	var namespaceAliases map[string]string
 	var providerAliases map[provider.Addr]provider.Addr
 

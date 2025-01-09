@@ -6,6 +6,8 @@ package memory
 import (
 	"context"
 	"errors"
+	"io"
+	"net/http"
 	"strings"
 
 	"github.com/opentofu/libregistry/metadata/storage"
@@ -174,5 +176,39 @@ func (a *api) DeleteFile(_ context.Context, filePath storage.Path) error {
 		return err
 	}
 	delete(current.files, filePath.Filename())
+	return nil
+}
+
+func (a *api) DownloadFile(ctx context.Context, url string, filePath storage.Path) error {
+	if err := filePath.Validate(); err != nil {
+		return err
+	}
+
+	request, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return err
+	}
+
+	client := http.DefaultClient
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	current := a.ensureDirectory(filePath.Basename())
+
+	if _, ok := current.directories[filePath.Filename()]; ok {
+		return &storage.ErrFileAlreadyExists{
+			Path: filePath,
+		}
+	}
+
+	contents, err := io.ReadAll(response.Body)
+	if err != nil {
+		return err
+	}
+
+	current.files[filePath.Filename()] = contents
 	return nil
 }
