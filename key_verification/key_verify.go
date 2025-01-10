@@ -2,7 +2,6 @@ package key_verification
 
 import (
 	"context"
-	"os"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/types/provider"
@@ -24,7 +23,7 @@ func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, namesp
 	for _, providerAddr := range providers {
 		provider, err := kv.dataAPI.GetProvider(ctx, providerAddr, false)
 		if err != nil {
-			_, _ = os.Stderr.Write([]byte(err.Error()))
+			return err
 		}
 
 		for _, version := range provider.Versions {
