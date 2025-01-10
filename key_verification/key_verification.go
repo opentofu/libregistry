@@ -9,10 +9,9 @@ import (
 	"github.com/opentofu/libregistry/metadata/storage"
 )
 
-// KeyVerification describes the functions for verifying the authenticity of a provider's key.
+// KeyVerification describes the functions for verifying if a key was used to sign a list of providers.
 type KeyVerification interface {
-	// AddModule adds a module based on a VCS repository. The VCS repository name must follow the naming convention
-	// of the VCS implementation passed to the registry API on initialization.
+	// VerifyKey verifies if a key was used to sign a list of providers on the namespace.
 	VerifyKey(ctx context.Context, key *crypto.Key, namespace string) error
 	// DownloadFile gets an url and return the file contents
 	DownloadFile(ctx context.Context, url string) ([]byte, error)
