@@ -6,8 +6,6 @@ package filesystem
 import (
 	"context"
 	"fmt"
-	"io"
-	"net/http"
 	"os"
 	"path"
 
@@ -139,40 +137,6 @@ func (f *storageAPI) DeleteFile(_ context.Context, filePath storage.Path) error 
 			return nil
 		}
 		return fmt.Errorf("cannot remove %s (%w)", fullPath, err)
-	}
-	return nil
-}
-
-func (f *storageAPI) DownloadFile(ctx context.Context, url string, filePath storage.Path) error {
-	if err := filePath.Validate(); err != nil {
-		return err
-	}
-
-	request, err := http.NewRequestWithContext(ctx, "GET", url, nil)
-	if err != nil {
-		return err
-	}
-
-	client := http.DefaultClient
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	fullPath := path.Join(f.directory, string(filePath))
-	contents, err := io.ReadAll(response.Body)
-	if err != nil {
-		return err
-	}
-
-	if err := os.WriteFile(fullPath, contents, 0644); err != nil {
-		if os.IsExist(err) {
-			return storage.ErrFileAlreadyExists{
-				Path: filePath,
-			}
-		}
-		return fmt.Errorf("failed to create file %s (%w)", fullPath, err)
 	}
 	return nil
 }

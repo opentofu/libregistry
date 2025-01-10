@@ -54,9 +54,6 @@ type ProviderDataAPI interface {
 	// GetProviderNamespaceKey loads a key for a specific provider namespace and returns the key material.
 	GetProviderNamespaceKey(ctx context.Context, namespace string, keyID string) (provider.Key, error)
 
-	// CheckProviderNamespaceKey checks if a key is used to sign the provider
-	CheckProviderNamespaceKey(ctx context.Context, namespace string, keyID string) error
-
 	// PutProviderNamespaceKey queues up adding a key with the specified key material for a provider namespace.
 	PutProviderNamespaceKey(ctx context.Context, namespace string, key provider.Key) error
 	// DeleteProviderNamespaceKey queues up deleting a specific key from a provider namespace.
