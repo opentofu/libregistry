@@ -6,7 +6,6 @@ import (
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/metadata"
-	"github.com/opentofu/libregistry/metadata/storage"
 	"github.com/opentofu/libregistry/types/provider"
 )
 
@@ -19,12 +18,7 @@ type KeyVerification interface {
 }
 
 // New creates a new instance of the key verification package with the given http client and a storage instance.
-func New(httpClient http.Client, storageAPI storage.API) (KeyVerification, error) {
-	dataAPI, err := metadata.New(storageAPI)
-	if err != nil {
-		return nil, err
-	}
-
+func New(httpClient http.Client, dataAPI metadata.API) (KeyVerification, error) {
 	return &keyVerification{
 		httpClient: httpClient,
 		dataAPI:    dataAPI,
