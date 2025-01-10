@@ -34,5 +34,5 @@ func New(httpClient http.Client, storageAPI storage.API) (KeyVerification, error
 type keyVerification struct {
 	httpClient http.Client
 	storageAPI storage.API
-	dataAPI    metadata.ProviderDataAPI
+	dataAPI    metadata.API
 }

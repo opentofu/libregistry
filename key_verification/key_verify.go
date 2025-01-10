@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/opentofu/libregistry/internal/gpg"
 	"github.com/opentofu/libregistry/metadata/storage"
 	"github.com/opentofu/libregistry/types/provider"
 )
@@ -18,7 +17,7 @@ func (kv keyVerification) VerifyKey(ctx context.Context, keyPath string, namespa
 		return fmt.Errorf("failed to load the key %s (%w)", keyPath, err)
 	}
 
-	signingKeyRing, err := gpg.ParseSigningKeyRing(string(keyFile))
+	signingKeyRing, err := parseSigningKeyRing(string(keyFile))
 
 	providers, err := kv.dataAPI.ListProvidersByNamespace(ctx, namespace, false)
 
@@ -39,7 +38,7 @@ func (kv keyVerification) VerifyKey(ctx context.Context, keyPath string, namespa
 				return err
 			}
 
-			if err := gpg.ValidateDetachedSignature(signingKeyRing, shaSumContents, shaSumSigContents); err != nil {
+			if err := validateDetachedSignature(signingKeyRing, shaSumContents, shaSumSigContents); err != nil {
 				return err
 			}
 		}
