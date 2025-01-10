@@ -1,4 +1,4 @@
-package provider_verification
+package provider_verifier
 
 import (
 	"context"
