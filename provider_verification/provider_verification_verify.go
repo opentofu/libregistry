@@ -1,17 +1,17 @@
-package key_verification
+package provider_verification
 
 import (
 	"context"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/opentofu/libregistry/internal/gpg_verifier"
+	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
 	"github.com/opentofu/libregistry/types/provider"
 )
 
 func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, namespace string) error {
 	namespace = provider.NormalizeNamespace(namespace)
 
-	gpgVerifier, err := gpg_verifier.New(key)
+	gpgVerifier, err := gpg_key_verifier.New(key)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package gpg_verifier
+package gpg_key_verifier
 
 import (
 	"fmt"
