@@ -17,7 +17,7 @@ type KeyVerification interface {
 	DownloadFile(ctx context.Context, url string) ([]byte, error)
 }
 
-// New creates a new instance of the registry API with the given GitHub client and data API instance.
+// New creates a new instance of the key verification package with the given http client and a storage instance.
 func New(httpClient http.Client, storageAPI storage.API) (KeyVerification, error) {
 	dataAPI, err := metadata.New(storageAPI)
 	if err != nil {
