@@ -25,20 +25,6 @@ func parseKeyRing(pubKeyObj *crypto.Key) (*crypto.KeyRing, error) {
 	return signingKeyRing, nil
 }
 
-func parseSigningKeyRing(data string) (*crypto.KeyRing, error) {
-	key, err := parseKey(data)
-	if err != nil {
-		return nil, fmt.Errorf("could not parse key: %w", err)
-	}
-
-	keyring, err := parseKeyRing(key)
-	if err != nil {
-		return nil, fmt.Errorf("could not build keyring: %w", err)
-	}
-
-	return keyring, nil
-}
-
 func validateDetachedSignature(keyring *crypto.KeyRing, data []byte, signature []byte) error {
 	plainMessage := crypto.NewPlainMessage(data)
 	pgpSignature := crypto.NewPGPSignature(signature)
@@ -46,4 +32,6 @@ func validateDetachedSignature(keyring *crypto.KeyRing, data []byte, signature [
 	if err := keyring.VerifyDetached(plainMessage, pgpSignature, crypto.GetUnixTime()); err != nil {
 		return err
 	}
+
+	return nil
 }

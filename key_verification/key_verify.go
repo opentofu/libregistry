@@ -2,24 +2,24 @@ package key_verification
 
 import (
 	"context"
-	"fmt"
 	"os"
 
-	"github.com/opentofu/libregistry/metadata/storage"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (kv keyVerification) VerifyKey(ctx context.Context, keyPath string, namespace string) error {
+func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, namespace string) error {
 	namespace = provider.NormalizeNamespace(namespace)
-	keyFile, err := kv.storageAPI.GetFile(ctx, storage.Path(keyPath))
 
+	signingKeyRing, err := parseKeyRing(key)
 	if err != nil {
-		return fmt.Errorf("failed to load the key %s (%w)", keyPath, err)
+		return err
 	}
 
-	signingKeyRing, err := parseSigningKeyRing(string(keyFile))
-
 	providers, err := kv.dataAPI.ListProvidersByNamespace(ctx, namespace, false)
+	if err != nil {
+		return err
+	}
 
 	for _, providerAddr := range providers {
 		provider, err := kv.dataAPI.GetProvider(ctx, providerAddr, false)

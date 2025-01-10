@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/metadata/storage"
 )
@@ -12,7 +13,7 @@ import (
 type KeyVerification interface {
 	// AddModule adds a module based on a VCS repository. The VCS repository name must follow the naming convention
 	// of the VCS implementation passed to the registry API on initialization.
-	VerifyKey(ctx context.Context, keyPath string, namespace string) error
+	VerifyKey(ctx context.Context, key *crypto.Key, namespace string) error
 	// DownloadFile gets an url and return the file contents
 	DownloadFile(ctx context.Context, url string) ([]byte, error)
 }
