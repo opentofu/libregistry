@@ -12,8 +12,6 @@ import (
 type KeyVerification interface {
 	// VerifyKey verifies if a key was used to sign a list of providers on the namespace.
 	VerifyKey(ctx context.Context, keyData []byte, provider provider.Addr) error
-	// downloadFile gets an url and return the file contents
-	downloadFile(ctx context.Context, url string) ([]byte, error)
 }
 
 // New creates a new instance of the key verification package with the given http client and a storage instance.

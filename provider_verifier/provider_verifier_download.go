@@ -1,13 +1,13 @@
 package provider_verifier
 
 import (
-	"context"
 	"fmt"
 	"io"
+	"net/http"
 )
 
-func (kv keyVerification) downloadFile(ctx context.Context, url string) ([]byte, error) {
-	response, err := kv.httpClient.Get(url)
+func downloadFile(httpClient http.Client, url string) ([]byte, error) {
+	response, err := httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}
