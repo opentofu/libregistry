@@ -9,8 +9,6 @@ import (
 type GPGKeyVerifier interface {
 	// ValidateSignature validates the signature of the data using the given signature.
 	ValidateSignature(data []byte, signature []byte) error
-	// GetHexKeyID returns the hex-encoded key ID of the key.
-	GetHexKeyID() string
 }
 
 type gpgKeyVerifier struct {
@@ -23,12 +21,12 @@ func New(keyData []byte) (GPGKeyVerifier, error) {
 
 	key, err := crypto.NewKeyFromArmored(asciiArmor)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse key: %w", err)
+		return nil, fmt.Errorf("could not parse armored key: %w", err)
 	}
 
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
-		return nil, fmt.Errorf("could not build keyring: %w", err)
+		return nil, fmt.Errorf("could not build keyring for key %s: %w", key.GetHexKeyID(), err)
 	}
 
 	return &gpgKeyVerifier{
