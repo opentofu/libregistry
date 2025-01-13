@@ -2,6 +2,7 @@ package provider_verifier
 
 import (
 	"context"
+	"fmt"
 	"io"
 )
 
