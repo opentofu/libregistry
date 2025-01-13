@@ -16,7 +16,7 @@ func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, provid
 
 	provider, err := kv.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to verify key %s for provider %s (%w)", key.GetHexKeyID(), providerAddr, err)
 	}
 
 	for _, version := range provider.Versions {
