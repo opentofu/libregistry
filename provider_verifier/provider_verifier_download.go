@@ -1,13 +1,19 @@
 package provider_verifier
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"net/http"
 )
 
-func downloadFile(httpClient http.Client, url string) ([]byte, error) {
-	response, err := httpClient.Get(url)
+func downloadFile(ctx context.Context, httpClient http.Client, url string) ([]byte, error) {
+	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to build the request to %s: %w", url, err)
+	}
+
+	response, err := httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}

@@ -20,12 +20,12 @@ func (kv keyVerification) VerifyKey(ctx context.Context, keyData []byte, provide
 	}
 
 	for _, version := range provider.Versions {
-		shaSumContents, err := downloadFile(kv.httpClient, version.SHASumsURL)
+		shaSumContents, err := downloadFile(ctx, kv.httpClient, version.SHASumsURL)
 		if err != nil {
 			return fmt.Errorf("failed to verify key %s for provider %s (%w)", gpgVerifier.GetHexKeyID(), providerAddr, err)
 		}
 
-		shaSumSigContents, err := downloadFile(kv.httpClient, version.SHASumsSignatureURL)
+		shaSumSigContents, err := downloadFile(ctx, kv.httpClient, version.SHASumsSignatureURL)
 		if err != nil {
 			return fmt.Errorf("failed to verify key %s for provider %s (%w)", gpgVerifier.GetHexKeyID(), providerAddr, err)
 		}
