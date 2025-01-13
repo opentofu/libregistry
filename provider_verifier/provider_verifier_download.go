@@ -10,7 +10,7 @@ import (
 func downloadFile(ctx context.Context, httpClient http.Client, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build the request to %s: %w", url, err)
+		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
 	response, err := httpClient.Do(req)
