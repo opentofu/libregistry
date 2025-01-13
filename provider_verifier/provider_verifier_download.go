@@ -6,7 +6,7 @@ import (
 	"io"
 )
 
-func (kv keyVerification) DownloadFile(ctx context.Context, url string) ([]byte, error) {
+func (kv keyVerification) downloadFile(ctx context.Context, url string) ([]byte, error) {
 	response, err := kv.httpClient.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)

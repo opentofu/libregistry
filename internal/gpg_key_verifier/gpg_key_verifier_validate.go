@@ -14,3 +14,7 @@ func (gv gpgKeyVerifier) ValidateSignature(data []byte, signature []byte) error 
 
 	return nil
 }
+
+func (gv gpgKeyVerifier) GetHexKeyID() string {
+	return gv.key.GetHexKeyID()
+}
