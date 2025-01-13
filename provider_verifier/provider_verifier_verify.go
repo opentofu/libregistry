@@ -2,6 +2,7 @@ package provider_verifier
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
@@ -22,16 +23,16 @@ func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, provid
 	for _, version := range provider.Versions {
 		shaSumContents, err := kv.DownloadFile(ctx, version.SHASumsURL)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to verify key %s for provider %s (%w)", key.GetHexKeyID(), providerAddr, err)
 		}
 
 		shaSumSigContents, err := kv.DownloadFile(ctx, version.SHASumsSignatureURL)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to verify key %s for provider %s (%w)", key.GetHexKeyID(), providerAddr, err)
 		}
 
 		if err := gpgVerifier.ValidateSignature(shaSumContents, shaSumSigContents); err != nil {
-			return err
+			return fmt.Errorf("failed to verify key %s for provider %s (%w)", key.GetHexKeyID(), providerAddr, err)
 		}
 	}
 
