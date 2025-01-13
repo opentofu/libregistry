@@ -8,7 +8,11 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (kv keyVerification) VerifyKey(ctx context.Context, keyData []byte, providerAddr provider.Addr) error {
+func (kv keyVerification) VerifyKey(ctx context.Context, keyData []byte, providerAddr provider.Addr, versionsToCheck uint16) error {
+	if versionsToCheck == 0 {
+		versionsToCheck = 10
+	}
+
 	gpgVerifier, err := gpg_key_verifier.New(keyData)
 	if err != nil {
 		return fmt.Errorf("failed to verify key %s for provider %s (cannot construct GPG key verifier: %w)", gpgVerifier.GetHexKeyID(), providerAddr, err)
@@ -19,7 +23,7 @@ func (kv keyVerification) VerifyKey(ctx context.Context, keyData []byte, provide
 		return fmt.Errorf("failed to verify key %s for provider %s (%w)", gpgVerifier.GetHexKeyID(), providerAddr, err)
 	}
 
-	for _, version := range provider.Versions {
+	for _, version := range provider.Versions[:versionsToCheck] {
 		shaSumContents, err := downloadFile(ctx, kv.httpClient, version.SHASumsURL)
 		if err != nil {
 			return fmt.Errorf("failed to verify key %s for provider %s (%w)", gpgVerifier.GetHexKeyID(), providerAddr, err)
