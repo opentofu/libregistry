@@ -12,7 +12,7 @@ import (
 func (kv keyVerification) VerifyKey(ctx context.Context, key *crypto.Key, providerAddr provider.Addr) error {
 	gpgVerifier, err := gpg_key_verifier.New(key)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to verify key %s for provider %s (cannot construct GPG key verifier: %w)", key.GetHexKeyID(), providerAddr, err)
 	}
 
 	provider, err := kv.dataAPI.GetProvider(ctx, providerAddr, false)
