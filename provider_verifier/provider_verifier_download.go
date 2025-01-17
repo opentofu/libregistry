@@ -21,7 +21,7 @@ func downloadFile(ctx context.Context, httpClient http.Client, url string) ([]by
 
 	contents, err := io.ReadAll(response.Body)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}
 
 	return contents, nil
