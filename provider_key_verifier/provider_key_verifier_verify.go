@@ -1,4 +1,4 @@
-package provider_verifier
+package provider_key_verifier
 
 import (
 	"context"
@@ -8,28 +8,24 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (kv keyVerification) VerifyKey(ctx context.Context, keyData []byte, providerAddr provider.Addr, versionsToCheck uint16) error {
-	if versionsToCheck == 0 {
-		versionsToCheck = 10
-	}
-
+func (pkv providerKeyVerifier) VerifyKey(ctx context.Context, keyData []byte, providerAddr provider.Addr) error {
 	gpgVerifier, err := gpg_key_verifier.New(keyData)
 	if err != nil {
 		return fmt.Errorf("failed to verify key for provider %s (cannot construct GPG key verifier: %w)", providerAddr, err)
 	}
 
-	provider, err := kv.dataAPI.GetProvider(ctx, providerAddr, false)
+	provider, err := pkv.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
 		return fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
-	for _, version := range provider.Versions[:versionsToCheck] {
-		shaSumContents, err := downloadFile(ctx, kv.httpClient, version.SHASumsURL)
+	for _, version := range provider.Versions[:pkv.versionsToCheck] {
+		shaSumContents, err := pkv.downloadFile(ctx, version.SHASumsURL)
 		if err != nil {
 			return fmt.Errorf("failed to download SHASums URL for provider %s (%w)", providerAddr, err)
 		}
 
-		shaSumSigContents, err := downloadFile(ctx, kv.httpClient, version.SHASumsSignatureURL)
+		shaSumSigContents, err := pkv.downloadFile(ctx, version.SHASumsSignatureURL)
 		if err != nil {
 			return fmt.Errorf("failed to download SHASums signature URL for provider %s (%w)", providerAddr, err)
 		}

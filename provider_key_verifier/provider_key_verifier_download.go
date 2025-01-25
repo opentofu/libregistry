@@ -1,4 +1,4 @@
-package provider_verifier
+package provider_key_verifier
 
 import (
 	"context"
@@ -7,13 +7,13 @@ import (
 	"net/http"
 )
 
-func downloadFile(ctx context.Context, httpClient http.Client, url string) ([]byte, error) {
+func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
-	response, err := httpClient.Do(req)
+	response, err := pkv.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}
