@@ -25,3 +25,13 @@ func TestProviderConfig(t *testing.T) {
 		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKeyVerifier).versionsToCheck, 10)
 	}
 }
+
+func TestProviderNoConfig(t *testing.T) {
+	mockClient := &ClientMock{}
+
+	_, err := New(mockClient, nil)
+
+	if err != nil {
+		t.Fatalf("Failed to create provider key verifier: %v", err)
+	}
+}
