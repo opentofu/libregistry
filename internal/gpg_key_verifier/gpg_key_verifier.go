@@ -6,6 +6,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
+// GPGKeyVerifier provides functions for validating GPG Signatures. It's mostly used for the provider keys used to sign SHASUM urls, but it can be used for any place that GPG keys were used.
 type GPGKeyVerifier interface {
 	// ValidateSignature validates the signature of the data using the given signature.
 	ValidateSignature(data []byte, signature []byte) error
@@ -16,6 +17,7 @@ type gpgKeyVerifier struct {
 	keyring *crypto.KeyRing
 }
 
+// New creates a GPG Key Verifier by passing ASCII-Armored PEM data in the keyData attribute.
 func New(keyData []byte) (GPGKeyVerifier, error) {
 	asciiArmor := string(keyData)
 
