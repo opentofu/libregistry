@@ -1,21 +1,26 @@
 package provider_key_verifier
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 )
 
-type ClientMock struct {
-}
+func generateTestClient(expected []byte) *http.Client {
+	svr := httptest.NewServer(
+		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			fmt.Fprintf(w, "%s", expected)
+		}),
+	)
 
-func (c *ClientMock) Do(req *http.Request) (*http.Response, error) {
-	return &http.Response{}, nil
+	defer svr.Close()
+
+	return svr.Client()
 }
 
 func TestProviderConfig(t *testing.T) {
-	mockClient := &ClientMock{}
-
-	pkv, err := New(mockClient, nil, WithVersionsToCheck(5))
+	pkv, err := New(*generateTestClient([]byte("test")), nil, WithVersionsToCheck(5))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
@@ -27,9 +32,7 @@ func TestProviderConfig(t *testing.T) {
 }
 
 func TestProviderNoConfig(t *testing.T) {
-	mockClient := &ClientMock{}
-
-	_, err := New(mockClient, nil)
+	_, err := New(*generateTestClient([]byte("test")), nil)
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)

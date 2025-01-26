@@ -14,12 +14,8 @@ type ProviderKeyVerifier interface {
 	VerifyKey(ctx context.Context, keyData []byte, provider provider.Addr) error
 }
 
-type HTTPClient interface {
-	Do(req *http.Request) (*http.Response, error)
-}
-
 // New creates a new instance of the key verification package with the given http client and a metadata instance.
-func New(httpClient HTTPClient, dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
+func New(httpClient http.Client, dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
 	providerKeyVerifier := &providerKeyVerifier{
 		httpClient:      httpClient,
 		dataAPI:         dataAPI,
@@ -44,7 +40,7 @@ func WithVersionsToCheck(versionsToCheck uint8) Option {
 }
 
 type providerKeyVerifier struct {
-	httpClient      HTTPClient
+	httpClient      http.Client
 	dataAPI         metadata.API
 	versionsToCheck uint8
 }
