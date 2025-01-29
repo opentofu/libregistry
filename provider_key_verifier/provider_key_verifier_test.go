@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
 func generateTestClient(expected []byte) *http.Client {
@@ -19,9 +22,39 @@ func generateTestClient(expected []byte) *http.Client {
 	return svr.Client()
 }
 
+func generateKey() ([]byte, error) {
+	passphrase := []byte("1234")
+	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", passphrase, "rsa", 1024)
+	if err != nil {
+		return nil, err
+	}
+
+	key, err := crypto.NewKeyFromArmored(armoredKey)
+	if err != nil {
+		return nil, err
+	}
+
+	unlockedKeyObj, err := key.Unlock(passphrase)
+	if err != nil {
+		return nil, err
+	}
+
+	pubKey, err := unlockedKeyObj.GetArmoredPublicKey()
+	if err != nil {
+		return nil, err
+	}
+
+	return []byte(pubKey), nil
+}
+
 func TestProviderConfig(t *testing.T) {
 	httpClient := *generateTestClient([]byte("test"))
-	pkv, err := New(nil, WithVersionsToCheck(5), WithHTTPClient(httpClient))
+	key, err := generateKey()
+	if err != nil {
+		t.Fatalf("couldn't create key: %v", err)
+	}
+
+	pkv, err := New(key, nil, WithVersionsToCheck(5), WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
@@ -34,7 +67,12 @@ func TestProviderConfig(t *testing.T) {
 
 func TestProviderNoConfig(t *testing.T) {
 	httpClient := *generateTestClient([]byte("test"))
-	_, err := New(nil, WithHTTPClient(httpClient))
+	key, err := generateKey()
+	if err != nil {
+		t.Fatalf("couldn't create key: %v", err)
+	}
+
+	_, err = New(key, nil, WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)

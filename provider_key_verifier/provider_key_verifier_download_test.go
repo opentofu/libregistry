@@ -9,9 +9,13 @@ import (
 func TestProviderDownload(t *testing.T) {
 	expectedData := []byte("test")
 	httpClient := *generateTestClient(expectedData)
+	keyData, err := generateKey()
+	if err != nil {
+		t.Fatalf("couldn't create key: %v", err)
+	}
 
 	ctx := context.Background()
-	pkv, err := New(nil, WithHTTPClient(httpClient))
+	pkv, err := New(keyData, nil, WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
