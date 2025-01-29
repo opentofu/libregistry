@@ -19,7 +19,9 @@ func (pkv providerKeyVerifier) VerifyKey(ctx context.Context, keyData []byte, pr
 		return fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
-	for _, version := range provider.Versions[:pkv.versionsToCheck] {
+	toCheck := min(uint8(len(provider.Versions)), pkv.versionsToCheck)
+
+	for _, version := range provider.Versions[:toCheck] {
 		shaSumContents, err := pkv.downloadFile(ctx, version.SHASumsURL)
 		if err != nil {
 			return fmt.Errorf("failed to download SHASums URL for provider %s (%w)", providerAddr, err)
