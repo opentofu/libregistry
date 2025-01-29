@@ -53,7 +53,7 @@ func TestProviderVerify(t *testing.T) {
 		t.Fatalf("Failed to verify key: %v", err)
 	}
 
-	if data[0] != "0.2.0" {
+	if data[0].Version != "0.2.0" {
 		t.Fatalf("Wrong version was returned %s", data[0])
 	}
 }

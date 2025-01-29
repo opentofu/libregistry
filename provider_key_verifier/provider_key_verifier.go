@@ -15,7 +15,7 @@ import (
 // ProviderKeyVerifier describes the functions for verifying if a key was used to sign a list of providers.
 type ProviderKeyVerifier interface {
 	// VerifyProvider verifies if the key was used to sign a provider addr. It returns a list of the valid versions signed by this key.
-	VerifyProvider(ctx context.Context, provider provider.Addr) ([]string, error)
+	VerifyProvider(ctx context.Context, provider provider.Addr) ([]*provider.Version, error)
 }
 
 // New creates a new instance of the provider key verification package with the given f keyData (GPG ASCII-Armored PEM) and the metadata API. There are a few optional fields that can be used modify the behavior of the package.

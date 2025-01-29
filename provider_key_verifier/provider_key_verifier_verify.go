@@ -8,32 +8,32 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (pkv providerKeyVerifier) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]string, error) {
+func (pkv providerKeyVerifier) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]*provider.Version, error) {
 	providerData, err := pkv.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
 	toCheck := min(len(providerData.Versions), int(pkv.versionsToCheck))
-	matchedVersions := make([]string, 0)
-	versionChan := make(chan string)
+	matchedVersions := make([]*provider.Version, 0)
+	versionChan := make(chan *provider.Version)
 
 	for _, version := range providerData.Versions[:toCheck] {
 		go func(version provider.Version) {
 			err := pkv.checkFn(pkv, ctx, version)
 			if err != nil {
 				pkv.logger.Error("error in version:", slog.String("provider", providerAddr.String()), slog.String("version", string(version.Version)), slog.Any("err", err))
-				versionChan <- ""
+				versionChan <- nil
 				return
 			}
-			versionChan <- string(version.Version)
+			versionChan <- &version
 
 		}(version)
 	}
 
 	for i := 0; i < toCheck; i++ {
 		v := <-versionChan
-		if v != "" {
+		if v != nil {
 			matchedVersions = append(matchedVersions, v)
 		}
 	}
