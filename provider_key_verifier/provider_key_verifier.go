@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
 	"github.com/opentofu/libregistry/metadata"
@@ -25,11 +26,14 @@ func New(keyData []byte, dataAPI metadata.API, opts ...Option) (ProviderKeyVerif
 		return nil, fmt.Errorf("cannot construct GPG key verifier: %w", err)
 	}
 
+	httpClient := http.Client{
+		Timeout: time.Second * 10,
+	}
 	// Default fields
 	providerKeyVerifier := &providerKeyVerifier{
 		gpgVerifier:     gpgVerifier,
 		dataAPI:         dataAPI,
-		httpClient:      http.Client{},
+		httpClient:      httpClient,
 		logger:          slog.New(slog.NewTextHandler(os.Stdout, nil)),
 		versionsToCheck: 10,
 		checkFn:         process,
