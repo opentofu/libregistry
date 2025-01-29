@@ -12,7 +12,7 @@ import (
 
 // ProviderKeyVerifier describes the functions for verifying if a key was used to sign a list of providers.
 type ProviderKeyVerifier interface {
-	// VerifyKey verifies if a keyData (GPG ASCII-Armored PEM) was used to sign a provider addr.
+	// VerifyKey verifies if a keyData (GPG ASCII-Armored PEM) was used to sign a provider addr. It returns a list of the valid versions signed by this key.
 	VerifyKey(ctx context.Context, keyData []byte, provider provider.Addr) ([]string, error)
 }
 
