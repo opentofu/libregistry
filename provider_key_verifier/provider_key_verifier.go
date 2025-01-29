@@ -2,7 +2,9 @@ package provider_key_verifier
 
 import (
 	"context"
+	"log/slog"
 	"net/http"
+	"os"
 
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
@@ -11,13 +13,15 @@ import (
 // ProviderKeyVerifier describes the functions for verifying if a key was used to sign a list of providers.
 type ProviderKeyVerifier interface {
 	// VerifyKey verifies if a keyData (GPG ASCII-Armored PEM) was used to sign a provider addr.
-	VerifyKey(ctx context.Context, keyData []byte, provider provider.Addr) error
+	VerifyKey(ctx context.Context, keyData []byte, provider provider.Addr) ([]string, error)
 }
 
 // New creates a new instance of the key verification package with the given http client and a metadata instance.
-func New(httpClient http.Client, dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
+func New(dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
+	// Default fields
 	providerKeyVerifier := &providerKeyVerifier{
-		httpClient:      httpClient,
+		httpClient:      http.Client{},
+		logger:          slog.New(slog.NewTextHandler(os.Stdout, nil)),
 		dataAPI:         dataAPI,
 		versionsToCheck: 10,
 	}
@@ -39,8 +43,21 @@ func WithVersionsToCheck(versionsToCheck uint8) Option {
 	}
 }
 
+func WithLogger(logger *slog.Logger) Option {
+	return func(c *providerKeyVerifier) {
+		c.logger = logger
+	}
+}
+
+func WithHTTPClient(httpClient http.Client) Option {
+	return func(c *providerKeyVerifier) {
+		c.httpClient = httpClient
+	}
+}
+
 type providerKeyVerifier struct {
 	httpClient      http.Client
 	dataAPI         metadata.API
 	versionsToCheck uint8
+	logger          *slog.Logger
 }

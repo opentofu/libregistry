@@ -20,7 +20,8 @@ func generateTestClient(expected []byte) *http.Client {
 }
 
 func TestProviderConfig(t *testing.T) {
-	pkv, err := New(*generateTestClient([]byte("test")), nil, WithVersionsToCheck(5))
+	httpClient := *generateTestClient([]byte("test"))
+	pkv, err := New(nil, WithVersionsToCheck(5), WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
@@ -32,7 +33,8 @@ func TestProviderConfig(t *testing.T) {
 }
 
 func TestProviderNoConfig(t *testing.T) {
-	_, err := New(*generateTestClient([]byte("test")), nil)
+	httpClient := *generateTestClient([]byte("test"))
+	_, err := New(nil, WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
