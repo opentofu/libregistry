@@ -20,12 +20,12 @@ type ProviderKeyVerifier interface {
 
 // New creates a new instance of the provider key verification package with the given f keyData (GPG ASCII-Armored PEM) and the metadata API. There are a few optional fields that can be used modify the behavior of the package.
 func New(keyData []byte, dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
-	// Default fields
 	gpgVerifier, err := gpg_key_verifier.New(keyData)
 	if err != nil {
 		return nil, fmt.Errorf("cannot construct GPG key verifier: %w", err)
 	}
 
+	// Default fields
 	providerKeyVerifier := &providerKeyVerifier{
 		gpgVerifier:     gpgVerifier,
 		dataAPI:         dataAPI,
