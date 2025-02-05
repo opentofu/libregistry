@@ -16,13 +16,13 @@ func (pkv providerKeyVerifier) VerifyProvider(ctx context.Context, providerAddr 
 		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
-	toCheck := min(len(providerData.Versions), int(pkv.config.NumVersionsToCheck))
+	toCheck := min(len(providerData.Versions), int(pkv.Config.NumVersionsToCheck))
 	matchedVersions := make([]*provider.Version, 0)
 	versionChan := make(chan *provider.Version)
 
 	for _, version := range providerData.Versions[:toCheck] {
 		go func(version provider.Version) {
-			err := pkv.config.checkFn(pkv, ctx, version)
+			err := pkv.Config.checkFn(pkv, ctx, version)
 			if err != nil {
 				// pkv.config.Logger.Error("error in version:", slog.String("provider", providerAddr.String()), slog.String("version", string(version.Version)), slog.Any("err", err))
 				versionChan <- nil

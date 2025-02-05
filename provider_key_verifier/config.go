@@ -9,6 +9,18 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
+// Config holds the configuration for GitHub.
+type Config struct {
+	// Logger holds the logger to write any logs to.
+	Logger logger.Logger
+	// HTTPClient holds the HTTP client to use for API requests. Note that this only affects API and RSS feed requests,
+	// but not git clone commands as those are done using the command line.
+	HTTPClient *http.Client
+	// Number of versions that are going to be checked if they were signed
+	NumVersionsToCheck uint8
+	checkFn            CheckFn
+}
+
 // Opt is a function that modifies the config.
 type Opt func(config *Config) error
 type CheckFn func(pkv providerKeyVerifier, ctx context.Context, version provider.Version) error
