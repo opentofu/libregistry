@@ -1,0 +1,62 @@
+package provider_key_verifier
+
+import (
+	"context"
+	"crypto/tls"
+	"net/http"
+
+	"github.com/opentofu/libregistry/logger"
+	"github.com/opentofu/libregistry/types/provider"
+)
+
+// Opt is a function that modifies the config.
+type Opt func(config *Config) error
+type CheckFn func(pkv providerKeyVerifier, ctx context.Context, version provider.Version) error
+
+// ApplyDefaults adds the default values if none are present.
+func (c *Config) ApplyDefaults() {
+	if c.Logger == nil {
+		c.Logger = logger.NewNoopLogger()
+	}
+
+	if c.HTTPClient == nil {
+		c.HTTPClient = http.DefaultClient
+		transport := http.DefaultTransport.(*http.Transport)
+		transport.TLSClientConfig = &tls.Config{
+			MinVersion: tls.VersionTLS13,
+		}
+		c.HTTPClient.Transport = transport
+	}
+}
+
+// WithVersionsToCheck is a functional option to set the number of versions to check for a provider.
+func WithNumVersionsToCheck(versionsToCheck uint8) Opt {
+	return func(config *Config) error {
+		config.NumVersionsToCheck = versionsToCheck
+		return nil
+	}
+}
+
+// WithLogger is a functional option to set the logger
+func WithLogger(logger logger.Logger) Opt {
+	return func(config *Config) error {
+		config.Logger = logger
+		return nil
+	}
+}
+
+// WithHTTPClient is a functional option to set the http Client
+func WithHTTPClient(httpClient *http.Client) Opt {
+	return func(config *Config) error {
+		config.HTTPClient = httpClient
+		return nil
+	}
+}
+
+// WithCheckFn is a functional option to set the function used to check the provider version
+func WithCheckFn(checkFn CheckFn) Opt {
+	return func(config *Config) error {
+		config.checkFn = checkFn
+		return nil
+	}
+}

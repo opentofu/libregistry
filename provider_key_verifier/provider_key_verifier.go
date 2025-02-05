@@ -6,12 +6,10 @@ package provider_key_verifier
 import (
 	"context"
 	"fmt"
-	"log/slog"
 	"net/http"
-	"os"
-	"time"
 
 	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
+	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
 )
@@ -22,70 +20,42 @@ type ProviderKeyVerifier interface {
 	VerifyProvider(ctx context.Context, provider provider.Addr) ([]*provider.Version, error)
 }
 
+// Config holds the configuration for GitHub.
+type Config struct {
+	// Logger holds the logger to write any logs to.
+	Logger logger.Logger
+	// HTTPClient holds the HTTP client to use for API requests. Note that this only affects API and RSS feed requests,
+	// but not git clone commands as those are done using the command line.
+	HTTPClient *http.Client
+	// Number of versions that are going to be checked if they were signed
+	NumVersionsToCheck uint8
+	checkFn            CheckFn
+}
+
 // New creates a new instance of the provider key verification package with the given f keyData (GPG ASCII-Armored PEM) and the metadata API. There are a few optional fields that can be used modify the behavior of the package.
-func New(keyData string, dataAPI metadata.API, opts ...Option) (ProviderKeyVerifier, error) {
+func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKeyVerifier, error) {
 	gpgVerifier, err := gpg_key_verifier.New(keyData)
 	if err != nil {
 		return nil, fmt.Errorf("cannot construct GPG key verifier: %w", err)
 	}
 
-	httpClient := &http.Client{
-		Timeout: time.Second * 10,
+	config := Config{}
+	for _, opt := range options {
+		if err := opt(&config); err != nil {
+			return nil, err
+		}
 	}
-	// Default fields
-	providerKeyVerifier := &providerKeyVerifier{
-		gpgVerifier:     gpgVerifier,
-		dataAPI:         dataAPI,
-		httpClient:      httpClient,
-		logger:          slog.New(slog.NewTextHandler(os.Stdout, nil)),
-		versionsToCheck: 10,
-		checkFn:         process,
-	}
+	config.ApplyDefaults()
 
-	for _, opt := range opts {
-		opt(providerKeyVerifier)
-	}
-
-	return providerKeyVerifier, nil
-}
-
-// Option is used for providing options to New without changing the signature of New.
-type Option func(c *providerKeyVerifier)
-type CheckFn func(pkv providerKeyVerifier, ctx context.Context, version provider.Version) error
-
-// WithVersionsToCheck is a functional option to set the number of versions to check for a provider.
-func WithVersionsToCheck(versionsToCheck uint8) Option {
-	return func(c *providerKeyVerifier) {
-		c.versionsToCheck = versionsToCheck
-	}
-}
-
-// WithLogger is a functional option to set the logger
-func WithLogger(logger *slog.Logger) Option {
-	return func(c *providerKeyVerifier) {
-		c.logger = logger
-	}
-}
-
-// WithHTTPClient is a functional option to set the http Client
-func WithHTTPClient(httpClient *http.Client) Option {
-	return func(c *providerKeyVerifier) {
-		c.httpClient = httpClient
-	}
-}
-
-// WithCheckFn is a functional option to set the function used to check the provider version
-func WithCheckFn(checkFn CheckFn) Option {
-	return func(c *providerKeyVerifier) {
-		c.checkFn = checkFn
-	}
+	return &providerKeyVerifier{
+		config:      config,
+		gpgVerifier: gpgVerifier,
+		dataAPI:     dataAPI,
+	}, nil
 }
 
 type providerKeyVerifier struct {
-	gpgVerifier     gpg_key_verifier.GPGKeyVerifier
-	dataAPI         metadata.API
-	versionsToCheck uint8
-	httpClient      *http.Client
-	logger          *slog.Logger
-	checkFn         CheckFn
+	gpgVerifier gpg_key_verifier.GPGKeyVerifier
+	dataAPI     metadata.API
+	config      Config
 }

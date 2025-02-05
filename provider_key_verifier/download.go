@@ -17,7 +17,7 @@ func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) (st
 		return "", fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
-	response, err := pkv.httpClient.Do(req)
+	response, err := pkv.config.HTTPClient.Do(req)
 	if err != nil {
 		return "", fmt.Errorf("failed to download %s: %w", url, err)
 	}

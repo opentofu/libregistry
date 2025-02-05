@@ -54,14 +54,14 @@ func TestProviderConfig(t *testing.T) {
 		t.Fatalf("couldn't create key: %v", err)
 	}
 
-	pkv, err := New(key, nil, WithVersionsToCheck(5), WithHTTPClient(httpClient))
+	pkv, err := New(key, nil, WithNumVersionsToCheck(5), WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
 	}
 
-	if pkv.(*providerKeyVerifier).versionsToCheck != 5 {
-		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKeyVerifier).versionsToCheck, 10)
+	if pkv.(*providerKeyVerifier).config.NumVersionsToCheck != 5 {
+		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKeyVerifier).config.NumVersionsToCheck, 10)
 	}
 }
 
