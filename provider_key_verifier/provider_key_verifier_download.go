@@ -23,6 +23,10 @@ func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) (st
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != 200 {
+		return "", fmt.Errorf("status code different from 200 %s: %w", url, err)
+	}
+
 	contents := new(strings.Builder)
 	_, err = io.Copy(contents, response.Body)
 	if err != nil {
