@@ -29,7 +29,7 @@ func New(keyData string, dataAPI metadata.API, opts ...Option) (ProviderKeyVerif
 		return nil, fmt.Errorf("cannot construct GPG key verifier: %w", err)
 	}
 
-	httpClient := http.Client{
+	httpClient := &http.Client{
 		Timeout: time.Second * 10,
 	}
 	// Default fields
@@ -68,7 +68,7 @@ func WithLogger(logger *slog.Logger) Option {
 }
 
 // WithHTTPClient is a functional option to set the http Client
-func WithHTTPClient(httpClient http.Client) Option {
+func WithHTTPClient(httpClient *http.Client) Option {
 	return func(c *providerKeyVerifier) {
 		c.httpClient = httpClient
 	}
@@ -84,8 +84,8 @@ func WithCheckFn(checkFn CheckFn) Option {
 type providerKeyVerifier struct {
 	gpgVerifier     gpg_key_verifier.GPGKeyVerifier
 	dataAPI         metadata.API
-	httpClient      http.Client
 	versionsToCheck uint8
+	httpClient      *http.Client
 	logger          *slog.Logger
 	checkFn         CheckFn
 }

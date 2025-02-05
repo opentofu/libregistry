@@ -11,45 +11,51 @@ import (
 	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
 )
 
-func generateTestData(plainMessage []byte) (string, []byte, error) {
+// generateTestData receives a plain message and returns a public key and a signature
+func generateTestData(plainMessage string) (string, string, error) {
 	// Generate a crypto key
 	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	unlockedKeyObj, err := key.Unlock(nil)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	signingKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
-	dataToSign := crypto.NewPlainMessage(plainMessage)
+	dataToSign := crypto.NewPlainMessageFromString(plainMessage)
 
 	signature, err := signingKeyRing.SignDetached(dataToSign)
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
 	publicKey, err := unlockedKeyObj.GetArmoredPublicKey()
 	if err != nil {
-		return "", nil, err
+		return "", "", err
 	}
 
-	return publicKey, signature.GetBinary(), nil
+	armoredSignature, err := signature.GetArmored()
+	if err != nil {
+		return "", "", err
+	}
+
+	return publicKey, armoredSignature, nil
 }
 
 func TestValidSignature(t *testing.T) {
-	data := []byte("test\n")
+	data := "test\n"
 	testKey, signature, err := generateTestData(data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
@@ -67,13 +73,13 @@ func TestValidSignature(t *testing.T) {
 }
 
 func TestInvalidSignature(t *testing.T) {
-	data := []byte("test_invalid\n")
+	data := "test_invalid\n"
 	testKey, _, err := generateTestData(data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}
 
-	signature := []byte("invalid_signature")
+	signature := "invalid_signature"
 
 	gpgKeyVerifier, err := gpg_key_verifier.New(testKey)
 	if err != nil {

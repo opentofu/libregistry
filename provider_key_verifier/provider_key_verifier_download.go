@@ -8,24 +8,26 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
-func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) ([]byte, error) {
+func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
+		return "", fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
 	response, err := pkv.httpClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to download %s: %w", url, err)
+		return "", fmt.Errorf("failed to download %s: %w", url, err)
 	}
 	defer response.Body.Close()
 
-	contents, err := io.ReadAll(response.Body)
+	contents := new(strings.Builder)
+	_, err = io.Copy(contents, response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read file from %s: %w", url, err)
+		return "", fmt.Errorf("failed to read file from %s: %w", url, err)
 	}
 
-	return contents, nil
+	return contents.String(), nil
 }

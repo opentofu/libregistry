@@ -4,14 +4,13 @@
 package provider_key_verifier
 
 import (
-	"bytes"
 	"context"
 	"testing"
 )
 
 func TestProviderDownload(t *testing.T) {
-	expectedData := []byte("test")
-	httpClient := *generateTestClient(expectedData)
+	expectedData := "test"
+	httpClient := generateTestClient(expectedData)
 	keyData, err := generateKey()
 	if err != nil {
 		t.Fatalf("couldn't create key: %v", err)
@@ -30,7 +29,7 @@ func TestProviderDownload(t *testing.T) {
 		t.Fatalf("Failed to download file: %v", err)
 	}
 
-	if bytes.Equal(data, expectedData) {
+	if data != expectedData {
 		t.Fatalf("expected file data is: %s, got %s instead", expectedData, data)
 	}
 

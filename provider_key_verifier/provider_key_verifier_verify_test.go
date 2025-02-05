@@ -28,8 +28,8 @@ func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, test 
 
 func TestProviderVerify(t *testing.T) {
 	metadataAPI := &mockMetadata{}
-	expectedData := []byte("test")
-	httpClient := *generateTestClient(expectedData)
+	expectedData := "test"
+	httpClient := generateTestClient(expectedData)
 
 	ctx := context.Background()
 

@@ -13,16 +13,14 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-func generateTestClient(expected []byte) *http.Client {
-	svr := httptest.NewServer(
+func generateTestClient(expected string) *http.Client {
+	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "%s", expected)
 		}),
 	)
 
-	defer svr.Close()
-
-	return svr.Client()
+	return srv.Client()
 }
 
 func generateKey() (string, error) {
@@ -50,7 +48,7 @@ func generateKey() (string, error) {
 }
 
 func TestProviderConfig(t *testing.T) {
-	httpClient := *generateTestClient([]byte("test"))
+	httpClient := generateTestClient("test")
 	key, err := generateKey()
 	if err != nil {
 		t.Fatalf("couldn't create key: %v", err)
@@ -68,7 +66,7 @@ func TestProviderConfig(t *testing.T) {
 }
 
 func TestProviderNoConfig(t *testing.T) {
-	httpClient := *generateTestClient([]byte("test"))
+	httpClient := generateTestClient("test")
 	key, err := generateKey()
 	if err != nil {
 		t.Fatalf("couldn't create key: %v", err)
