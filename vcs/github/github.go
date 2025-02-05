@@ -10,7 +10,6 @@ import (
 	"encoding/xml"
 	"errors"
 	"fmt"
-	"github.com/opentofu/libregistry/internal/retry"
 	"io"
 	"io/fs"
 	"net/http"
@@ -24,6 +23,8 @@ import (
 	"sync"
 	"syscall"
 	"time"
+
+	"github.com/opentofu/libregistry/internal/retry"
 
 	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/vcs"
@@ -527,7 +528,7 @@ func (g github) listLatest(ctx context.Context, repository vcs.RepositoryAddr, f
 	defer func() {
 		_ = resp.Body.Close()
 	}()
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return nil, &vcs.RequestFailedError{
 			Cause: fmt.Errorf("invalid status code: %d", resp.StatusCode),
@@ -649,7 +650,7 @@ func (g github) request(ctx context.Context, url string, response any) error {
 		_ = resp.Body.Close()
 	}()
 	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", url, resp.StatusCode)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
 		return &vcs.RequestFailedError{
 			Cause: &InvalidStatusCodeError{resp.StatusCode},
@@ -746,9 +747,9 @@ func (g github) DownloadAsset(ctx context.Context, repository vcs.RepositoryAddr
 		_ = resp.Body.Close()
 	}()
 	logger.LogTrace(ctx, g.config.Logger, "GET request to %s returned status code %d", assetURL, resp.StatusCode)
-	if resp.StatusCode != 200 {
+	if resp.StatusCode != http.StatusOK {
 		err = &InvalidStatusCodeError{resp.StatusCode}
-		if resp.StatusCode == 404 {
+		if resp.StatusCode == http.StatusNotFound {
 			return nil, &vcs.AssetNotFoundError{
 				RepositoryAddr: repository,
 				Version:        version,
