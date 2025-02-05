@@ -18,10 +18,8 @@ type gpgKeyVerifier struct {
 }
 
 // New creates a GPG Key Verifier by passing ASCII-Armored PEM data in the keyData attribute.
-func New(keyData []byte) (GPGKeyVerifier, error) {
-	asciiArmor := string(keyData)
-
-	key, err := crypto.NewKeyFromArmored(asciiArmor)
+func New(keyData string) (GPGKeyVerifier, error) {
+	key, err := crypto.NewKeyFromArmored(keyData)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse armored key: %w", err)
 	}

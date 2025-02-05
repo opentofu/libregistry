@@ -22,29 +22,28 @@ func generateTestClient(expected []byte) *http.Client {
 	return svr.Client()
 }
 
-func generateKey() ([]byte, error) {
-	passphrase := []byte("1234")
-	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", passphrase, "rsa", 1024)
+func generateKey() (string, error) {
+	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	unlockedKeyObj, err := key.Unlock(passphrase)
+	unlockedKeyObj, err := key.Unlock(nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	pubKey, err := unlockedKeyObj.GetArmoredPublicKey()
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
-	return []byte(pubKey), nil
+	return pubKey, nil
 }
 
 func TestProviderConfig(t *testing.T) {

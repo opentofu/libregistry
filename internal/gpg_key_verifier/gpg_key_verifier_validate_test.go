@@ -11,43 +11,41 @@ import (
 	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
 )
 
-var passphrase = []byte("LongSecret")
-
-func generateTestData(data []byte) ([]byte, []byte, error) {
+func generateTestData(plainMessage []byte) (string, []byte, error) {
 	// Generate a crypto key
-	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", passphrase, "rsa", 1024)
+	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	unlockedKeyObj, err := key.Unlock(passphrase)
+	unlockedKeyObj, err := key.Unlock(nil)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	signingKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	dataToSign := crypto.NewPlainMessage(data)
+	dataToSign := crypto.NewPlainMessage(plainMessage)
 
 	signature, err := signingKeyRing.SignDetached(dataToSign)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
 	publicKey, err := unlockedKeyObj.GetArmoredPublicKey()
 	if err != nil {
-		return nil, nil, err
+		return "", nil, err
 	}
 
-	return []byte(publicKey), signature.GetBinary(), nil
+	return publicKey, signature.GetBinary(), nil
 }
 
 func TestValidSignature(t *testing.T) {
