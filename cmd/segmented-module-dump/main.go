@@ -8,6 +8,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strconv"
 
 	"github.com/opentofu/libregistry/metadata"
@@ -15,8 +16,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 {
-		_, _ = os.Stderr.Write([]byte("Usage: segmented-module-dump path/to/registry batchsize"))
+	if len(os.Args) != 4 {
+		_, _ = os.Stderr.Write([]byte("Usage: segmented-module-dump path/to/registry batchsize destination"))
 		os.Exit(1)
 	}
 
@@ -30,6 +31,16 @@ func main() {
 		_, _ = os.Stderr.Write([]byte(err.Error()))
 		os.Exit(1)
 	}
+	destination := os.Args[3]
+	stat, err := os.Stat(destination)
+	if err != nil {
+		_, _ = os.Stderr.Write([]byte("Invalid destination: " + destination + " (" + err.Error() + ")"))
+		os.Exit(1)
+	}
+	if !stat.IsDir() {
+		_, _ = os.Stderr.Write([]byte("Invalid destination: " + destination + " (not a directory)"))
+		os.Exit(1)
+	}
 
 	ctx := context.Background()
 
@@ -41,7 +52,27 @@ func main() {
 
 	versions := 0
 	batch := 0
-	fmt.Printf("Provider\tVersions\tBatch\n")
+	var fh *os.File
+
+	openBatch := func() error {
+		fh, err = os.Create(path.Join(destination, fmt.Sprintf("%d.txt", batch)))
+		if err != nil {
+			return fmt.Errorf("failed to open batch file %d.txt", batch)
+		}
+		return nil
+	}
+	closeBatch := func() error {
+		if fh != nil {
+			if err := fh.Close(); err != nil {
+				return fmt.Errorf("failed to close batch file %d.txt", batch)
+			}
+		}
+		return nil
+	}
+	if err := openBatch(); err != nil {
+		_, _ = os.Stderr.Write([]byte(err.Error()))
+		os.Exit(1)
+	}
 	for _, moduleAddr := range providers {
 		module, err := meta.GetModule(ctx, moduleAddr)
 		if err != nil {
@@ -49,10 +80,26 @@ func main() {
 			os.Exit(1)
 		}
 		if versions+len(module.Versions) > batchSize {
+			if err := closeBatch(); err != nil {
+				_, _ = os.Stderr.Write([]byte(fmt.Sprintf("Failed to close %d.txt (%v)", batch, err)))
+				os.Exit(1)
+			}
 			versions = 0
 			batch += 1
+			if err := openBatch(); err != nil {
+				_, _ = os.Stderr.Write([]byte(fmt.Sprintf("Failed to open %d.txt (%v)", batch, err)))
+				os.Exit(1)
+			}
 		}
 		versions += len(module.Versions)
-		fmt.Printf("%s\t%d\t%d\n", moduleAddr, len(module.Versions), batch)
+		if _, err := fh.Write([]byte(fmt.Sprintf("%s\n", moduleAddr))); err != nil {
+			_, _ = os.Stderr.Write([]byte(fmt.Sprintf("Failed to write %d.txt (%v)", batch, err)))
+			_ = closeBatch()
+			os.Exit(1)
+		}
+	}
+	if err := closeBatch(); err != nil {
+		_, _ = os.Stderr.Write([]byte(fmt.Sprintf("Failed to close %d.txt (%v)", batch, err)))
+		os.Exit(1)
 	}
 }
