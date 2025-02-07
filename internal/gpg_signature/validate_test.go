@@ -10,6 +10,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
+// generateTestKey returns a PGP key
 func generateTestKey(t *testing.T) *crypto.Key {
 	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {

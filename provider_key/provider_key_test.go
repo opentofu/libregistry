@@ -13,6 +13,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
+// generateTestPubKey returns a PGP public key
 func generateTestPubKey(t *testing.T) string {
 	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
