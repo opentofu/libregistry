@@ -47,16 +47,16 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 func (p *providerKey) check(ctx context.Context, version provider.Version) error {
 	shaSumContents, err := p.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
-		return fmt.Errorf("failed to download SHASums URL")
+		return fmt.Errorf("failed to download SHASums URL: %w", err)
 	}
 
 	signature, err := p.downloadFile(ctx, version.SHASumsSignatureURL)
 	if err != nil {
-		return fmt.Errorf("failed to download SHASums signature URL for provider")
+		return fmt.Errorf("failed to download SHASums signature URL for provider: %w", err)
 	}
 
 	if err := p.gpgVerifier.Validate(signature, shaSumContents); err != nil {
-		return fmt.Errorf("failed to validate signature for provider")
+		return fmt.Errorf("failed to validate signature for provider: %w", err)
 	}
 	return nil
 }

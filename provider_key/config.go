@@ -21,7 +21,8 @@ type Config struct {
 	HTTPClient *http.Client
 	// Number of versions that are going to be checked if they were signed
 	NumVersionsToCheck uint8
-	MaxParallelism     uint8
+	// Number of max parallelism used when checking the signatures for the versions
+	MaxParallelism uint8
 }
 
 // Opt is a function that modifies the config.
@@ -41,6 +42,10 @@ func (c *Config) ApplyDefaults() {
 			MinVersion: tls.VersionTLS13,
 		}
 		c.HTTPClient.Transport = transport
+	}
+
+	if c.MaxParallelism == 0 {
+		c.MaxParallelism = 10
 	}
 }
 
