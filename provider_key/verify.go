@@ -30,8 +30,8 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 		go func() {
 			parallelismSemaphore <- struct{}{}
 			if err := p.check(ctx, version); err != nil {
-				p.config.Logger.Error(ctx, "failed to verify key for provider %s version %s (%v)", providerAddr.String(), string(version.Version), err)
-				return
+				// p.config.Logger.Error(ctx, "failed to verify key for provider %s version %s (%v)", providerAddr.String(), string(version.Version), err)
+				// return
 			}
 			lock.Lock()
 			matchedVersions = append(matchedVersions, version)
