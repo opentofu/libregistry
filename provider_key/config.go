@@ -21,7 +21,7 @@ type Config struct {
 	HTTPClient *http.Client
 	// Number of versions that are going to be checked if they were signed
 	NumVersionsToCheck uint8
-	checkFn            CheckFn
+	MaxParallelism     uint8
 }
 
 // Opt is a function that modifies the config.
@@ -68,10 +68,10 @@ func WithHTTPClient(httpClient *http.Client) Opt {
 	}
 }
 
-// WithCheckFn is a functional option to set the function used to check the provider version
-func WithCheckFn(checkFn CheckFn) Opt {
+// WithMaxParallelism is a functional option to set the function used to check the provider version
+func WithMaxParallelism(maxParallelism uint8) Opt {
 	return func(config *Config) error {
-		config.checkFn = checkFn
+		config.MaxParallelism = maxParallelism
 		return nil
 	}
 }

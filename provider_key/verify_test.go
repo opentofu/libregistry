@@ -29,18 +29,13 @@ func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, test 
 func TestProviderVerify(t *testing.T) {
 	metadataAPI := &mockMetadata{}
 	expectedData := "test"
-	httpClient := generateTestClient(expectedData)
+	httpClient := generateTestClient(t, expectedData)
 
 	ctx := context.Background()
 
-	keyData, err := generateKey()
-	if err != nil {
-		t.Fatalf("Failed to generate key: %v", err)
-	}
+	pubKey := generateTestPubKey(t)
 
-	pkv, err := New(keyData, metadataAPI, WithHTTPClient(httpClient), WithCheckFn(func(pkv providerKey, ctx context.Context, version provider.Version) error {
-		return nil
-	}))
+	pkv, err := New(pubKey, metadataAPI, WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)

@@ -6,55 +6,56 @@ package provider_key
 import (
 	"context"
 	"fmt"
+	"sync"
 
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (pkv *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]*provider.Version, error) {
-	providerData, err := pkv.dataAPI.GetProvider(ctx, providerAddr, false)
+func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]provider.Version, error) {
+	providerData, err := p.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
-	toCheck := min(len(providerData.Versions), int(pkv.config.NumVersionsToCheck))
-	matchedVersions := make([]*provider.Version, 0)
-	versionChan := make(chan *provider.Version)
+	toCheck := min(len(providerData.Versions), int(p.config.NumVersionsToCheck))
+	var matchedVersions []provider.Version
 
+	lock := &sync.Mutex{}
+	wg := &sync.WaitGroup{}
+	versions := providerData.Versions[:toCheck]
+	wg.Add(len(versions))
+	parallelismSemaphore := make(chan struct{}, p.config.MaxParallelism)
 	for _, version := range providerData.Versions[:toCheck] {
-		go func(version provider.Version) {
-			err := pkv.config.checkFn(*pkv, ctx, version)
-			if err != nil {
-				// pkv.config.Logger.Error("error in version:", slog.String("provider", providerAddr.String()), slog.String("version", string(version.Version)), slog.Any("err", err))
-				versionChan <- nil
+		version := version
+		go func() {
+			parallelismSemaphore <- struct{}{}
+			if err := p.check(ctx, version); err != nil {
+				p.config.Logger.Error(ctx, "failed to verify key for provider %s version %s (%v)", providerAddr.String(), string(version.Version), err)
 				return
 			}
-			versionChan <- &version
-
-		}(version)
+			lock.Lock()
+			matchedVersions = append(matchedVersions, version)
+			lock.Unlock()
+			<-parallelismSemaphore
+		}()
 	}
-
-	for i := 0; i < toCheck; i++ {
-		v := <-versionChan
-		if v != nil {
-			matchedVersions = append(matchedVersions, v)
-		}
-	}
+	wg.Wait()
 
 	return matchedVersions, nil
 }
 
-func process(pkv *providerKey, ctx context.Context, version provider.Version) error {
-	shaSumContents, err := pkv.downloadFile(ctx, version.SHASumsURL)
+func (p *providerKey) check(ctx context.Context, version provider.Version) error {
+	shaSumContents, err := p.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
 		return fmt.Errorf("failed to download SHASums URL")
 	}
 
-	signature, err := pkv.downloadFile(ctx, version.SHASumsSignatureURL)
+	signature, err := p.downloadFile(ctx, version.SHASumsSignatureURL)
 	if err != nil {
 		return fmt.Errorf("failed to download SHASums signature URL for provider")
 	}
 
-	if err := pkv.gpgVerifier.Validate(signature, shaSumContents); err != nil {
+	if err := p.gpgVerifier.Validate(signature, shaSumContents); err != nil {
 		return fmt.Errorf("failed to validate signature for provider")
 	}
 	return nil

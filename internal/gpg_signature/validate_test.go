@@ -10,25 +10,31 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-// generateTestData receives a plain message and returns a public key and a signature
-func generateTestData(plainMessage string) (string, string, error) {
-	// Generate a crypto key
+func generateTestKey(t *testing.T) *crypto.Key {
 	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		return "", "", err
+		t.Error(err)
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		return "", "", err
+		t.Error(err)
 	}
 
-	unlockedKeyObj, err := key.Unlock(nil)
+	unlockedKey, err := key.Unlock(nil)
 	if err != nil {
-		return "", "", err
+		t.Error(err)
 	}
 
-	signingKeyRing, err := crypto.NewKeyRing(unlockedKeyObj)
+	return unlockedKey
+}
+
+// generateTestData receives a plain message and returns a public key and a signature
+func generateTestData(t *testing.T, plainMessage string) (string, string, error) {
+	// Generate a crypto key
+	key := generateTestKey(t)
+
+	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
 		return "", "", err
 	}
@@ -40,7 +46,7 @@ func generateTestData(plainMessage string) (string, string, error) {
 		return "", "", err
 	}
 
-	publicKey, err := unlockedKeyObj.GetArmoredPublicKey()
+	publicKey, err := key.GetArmoredPublicKey()
 	if err != nil {
 		return "", "", err
 	}
@@ -55,7 +61,7 @@ func generateTestData(plainMessage string) (string, string, error) {
 
 func TestValidSignature(t *testing.T) {
 	data := "test\n"
-	testKey, signature, err := generateTestData(data)
+	testKey, signature, err := generateTestData(t, data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}
@@ -73,7 +79,7 @@ func TestValidSignature(t *testing.T) {
 
 func TestInvalidSignature(t *testing.T) {
 	data := "test_invalid\n"
-	testKey, _, err := generateTestData(data)
+	testKey, _, err := generateTestData(t, data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}

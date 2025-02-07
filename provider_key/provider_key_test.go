@@ -13,48 +13,48 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-func generateTestClient(expected string) *http.Client {
+func generateTestPubKey(t *testing.T) string {
+	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
+	if err != nil {
+		t.Error(err)
+	}
+
+	key, err := crypto.NewKeyFromArmored(armoredKey)
+	if err != nil {
+		t.Error(err)
+	}
+
+	unlockedKey, err := key.Unlock(nil)
+	if err != nil {
+		t.Error(err)
+	}
+
+	pubKey, err := unlockedKey.GetArmoredPublicKey()
+	if err != nil {
+		t.Error(err)
+	}
+
+	return pubKey
+}
+
+func generateTestClient(t *testing.T, expected string) *http.Client {
 	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			fmt.Fprintf(w, "%s", expected)
 		}),
 	)
 
+	t.Cleanup(func() {
+		srv.Close()
+	})
 	return srv.Client()
 }
 
-func generateKey() (string, error) {
-	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
-	if err != nil {
-		return "", err
-	}
-
-	key, err := crypto.NewKeyFromArmored(armoredKey)
-	if err != nil {
-		return "", err
-	}
-
-	unlockedKeyObj, err := key.Unlock(nil)
-	if err != nil {
-		return "", err
-	}
-
-	pubKey, err := unlockedKeyObj.GetArmoredPublicKey()
-	if err != nil {
-		return "", err
-	}
-
-	return pubKey, nil
-}
-
 func TestProviderConfig(t *testing.T) {
-	httpClient := generateTestClient("test")
-	key, err := generateKey()
-	if err != nil {
-		t.Fatalf("couldn't create key: %v", err)
-	}
+	httpClient := generateTestClient(t, "test")
+	pubKey := generateTestPubKey(t)
 
-	pkv, err := New(key, nil, WithNumVersionsToCheck(5), WithHTTPClient(httpClient))
+	pkv, err := New(pubKey, nil, WithNumVersionsToCheck(5), WithHTTPClient(httpClient))
 
 	if err != nil {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
