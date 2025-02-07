@@ -4,7 +4,6 @@
 package provider_key
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -41,7 +40,7 @@ func generateTestPubKey(t *testing.T) string {
 func generateTestClient(t *testing.T, expected string) *http.Client {
 	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			fmt.Fprintf(w, "%s", expected)
+			w.Write([]byte(expected))
 		}),
 	)
 
