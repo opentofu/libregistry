@@ -9,7 +9,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-func (gv gpgKeyVerifier) ValidateSignature(data string, signature string) error {
+func (gv *gpgKeyVerifier) Validate(signature string, data string) error {
 	plainMessage := crypto.NewPlainMessageFromString(data)
 	pgpSignature, err := crypto.NewPGPSignatureFromArmored(signature)
 	if err != nil {

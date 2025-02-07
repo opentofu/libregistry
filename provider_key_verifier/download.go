@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (pkv providerKeyVerifier) downloadFile(ctx context.Context, url string) (string, error) {
+func (pkv *providerKeyVerifier) downloadFile(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create HTTP request (%w)", err)

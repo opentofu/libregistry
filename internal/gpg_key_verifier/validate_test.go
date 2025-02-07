@@ -66,7 +66,7 @@ func TestValidSignature(t *testing.T) {
 		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
 	}
 
-	err = gpgKeyVerifier.ValidateSignature(data, signature)
+	err = gpgKeyVerifier.Validate(signature, data)
 	if err != nil {
 		t.Fatalf("Could not validate the signature (%v)", err)
 	}
@@ -86,7 +86,7 @@ func TestInvalidSignature(t *testing.T) {
 		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
 	}
 
-	err = gpgKeyVerifier.ValidateSignature(data, signature)
+	err = gpgKeyVerifier.Validate(signature, data)
 	if err == nil {
 		t.Fatalf("Err should be non-nil (%v)", err)
 	}

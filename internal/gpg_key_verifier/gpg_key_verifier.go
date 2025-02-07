@@ -11,8 +11,8 @@ import (
 
 // GPGKeyVerifier provides functions for validating GPG Signatures. It's mostly used for the provider keys used to sign SHASUM urls, but it can be used for any place that GPG keys were used.
 type GPGKeyVerifier interface {
-	// ValidateSignature validates the signature of the data using the given signature.
-	ValidateSignature(data string, signature string) error
+	// Validate validates the signature of the data using the given signature.
+	Validate(signature string, data string) error
 }
 
 type gpgKeyVerifier struct {

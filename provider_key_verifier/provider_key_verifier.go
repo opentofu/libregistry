@@ -34,14 +34,14 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKeyVerif
 	config.ApplyDefaults()
 
 	return &providerKeyVerifier{
-		Config:      config,
+		config:      config,
 		gpgVerifier: gpgVerifier,
 		dataAPI:     dataAPI,
 	}, nil
 }
 
 type providerKeyVerifier struct {
-	Config      Config
+	config      Config
 	gpgVerifier gpg_key_verifier.GPGKeyVerifier
 	dataAPI     metadata.API
 }
