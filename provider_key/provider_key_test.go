@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package provider_key_verifier
+package provider_key
 
 import (
 	"fmt"
@@ -60,21 +60,7 @@ func TestProviderConfig(t *testing.T) {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
 	}
 
-	if pkv.(*providerKeyVerifier).config.NumVersionsToCheck != 5 {
-		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKeyVerifier).config.NumVersionsToCheck, 10)
-	}
-}
-
-func TestProviderNoConfig(t *testing.T) {
-	httpClient := generateTestClient("test")
-	key, err := generateKey()
-	if err != nil {
-		t.Fatalf("couldn't create key: %v", err)
-	}
-
-	_, err = New(key, nil, WithHTTPClient(httpClient))
-
-	if err != nil {
-		t.Fatalf("Failed to create provider key verifier: %v", err)
+	if pkv.(*providerKey).config.NumVersionsToCheck != 5 {
+		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKey).config.NumVersionsToCheck, 10)
 	}
 }

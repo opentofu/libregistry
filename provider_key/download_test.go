@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package provider_key_verifier
+package provider_key
 
 import (
 	"context"
@@ -23,7 +23,7 @@ func TestProviderDownload(t *testing.T) {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
 	}
 
-	data, err := pkv.(*providerKeyVerifier).downloadFile(ctx, "https://example.com/test.txt")
+	data, err := pkv.(*providerKey).downloadFile(ctx, "https://example.com/test.txt")
 
 	if err != nil {
 		t.Fatalf("Failed to download file: %v", err)

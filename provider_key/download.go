@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package provider_key_verifier
+package provider_key
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 	"strings"
 )
 
-func (pkv *providerKeyVerifier) downloadFile(ctx context.Context, url string) (string, error) {
+func (pkv *providerKey) downloadFile(ctx context.Context, url string) (string, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to create HTTP request (%w)", err)

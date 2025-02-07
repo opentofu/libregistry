@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package provider_key_verifier
+package provider_key
 
 import (
 	"context"
@@ -38,7 +38,7 @@ func TestProviderVerify(t *testing.T) {
 		t.Fatalf("Failed to generate key: %v", err)
 	}
 
-	pkv, err := New(keyData, metadataAPI, WithHTTPClient(httpClient), WithCheckFn(func(pkv providerKeyVerifier, ctx context.Context, version provider.Version) error {
+	pkv, err := New(keyData, metadataAPI, WithHTTPClient(httpClient), WithCheckFn(func(pkv providerKey, ctx context.Context, version provider.Version) error {
 		return nil
 	}))
 

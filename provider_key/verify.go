@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package provider_key_verifier
+package provider_key
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (pkv *providerKeyVerifier) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]*provider.Version, error) {
+func (pkv *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]*provider.Version, error) {
 	providerData, err := pkv.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
@@ -43,7 +43,7 @@ func (pkv *providerKeyVerifier) VerifyProvider(ctx context.Context, providerAddr
 	return matchedVersions, nil
 }
 
-func process(pkv *providerKeyVerifier, ctx context.Context, version provider.Version) error {
+func process(pkv *providerKey, ctx context.Context, version provider.Version) error {
 	shaSumContents, err := pkv.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
 		return fmt.Errorf("failed to download SHASums URL")

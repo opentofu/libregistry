@@ -1,14 +1,13 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpg_key_verifier_test
+package gpg_signature
 
 import (
 	"testing"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/ProtonMail/gopenpgp/v2/helper"
-	"github.com/opentofu/libregistry/internal/gpg_key_verifier"
 )
 
 // generateTestData receives a plain message and returns a public key and a signature
@@ -61,7 +60,7 @@ func TestValidSignature(t *testing.T) {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}
 
-	gpgKeyVerifier, err := gpg_key_verifier.New(testKey)
+	gpgKeyVerifier, err := New(testKey)
 	if err != nil {
 		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
 	}
@@ -81,7 +80,7 @@ func TestInvalidSignature(t *testing.T) {
 
 	signature := "invalid_signature"
 
-	gpgKeyVerifier, err := gpg_key_verifier.New(testKey)
+	gpgKeyVerifier, err := New(testKey)
 	if err != nil {
 		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
 	}

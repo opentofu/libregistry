@@ -1,4 +1,7 @@
-package provider_key_verifier
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: MPL-2.0
+
+package provider_key
 
 import (
 	"context"
@@ -23,7 +26,7 @@ type Config struct {
 
 // Opt is a function that modifies the config.
 type Opt func(config *Config) error
-type CheckFn func(pkv providerKeyVerifier, ctx context.Context, version provider.Version) error
+type CheckFn func(pkv providerKey, ctx context.Context, version provider.Version) error
 
 // ApplyDefaults adds the default values if none are present.
 func (c *Config) ApplyDefaults() {

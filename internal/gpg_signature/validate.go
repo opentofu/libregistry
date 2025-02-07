@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpg_key_verifier
+package gpg_signature
 
 import (
 	"fmt"
