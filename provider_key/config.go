@@ -4,12 +4,10 @@
 package provider_key
 
 import (
-	"context"
 	"crypto/tls"
 	"net/http"
 
 	"github.com/opentofu/libregistry/logger"
-	"github.com/opentofu/libregistry/types/provider"
 )
 
 // Config holds the configuration for GitHub.
@@ -27,7 +25,6 @@ type Config struct {
 
 // Opt is a function that modifies the config.
 type Opt func(config *Config) error
-type CheckFn func(pkv providerKey, ctx context.Context, version provider.Version) error
 
 // ApplyDefaults adds the default values if none are present.
 func (c *Config) ApplyDefaults() {
