@@ -10,13 +10,13 @@ import (
 	"net/http"
 )
 
-func (pkv *providerKey) downloadFile(ctx context.Context, url string) ([]byte, error) {
+func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
-	response, err := pkv.config.HTTPClient.Do(req)
+	response, err := pk.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}

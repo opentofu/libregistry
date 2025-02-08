@@ -5,8 +5,10 @@ package provider_key
 
 import (
 	"crypto/tls"
+	"fmt"
 	"net/http"
 
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/logger"
 )
 
@@ -21,13 +23,15 @@ type Config struct {
 	NumVersionsToCheck uint8
 	// Number of max parallelism used when checking the signatures for the versions
 	MaxParallelism uint8
+	// Keyring is used to test the PGP key
+	KeyRing *crypto.KeyRing
 }
 
 // Opt is a function that modifies the config.
 type Opt func(config *Config) error
 
 // ApplyDefaults adds the default values if none are present.
-func (c *Config) ApplyDefaults() {
+func (c *Config) ApplyDefaults(key *crypto.Key) error {
 	if c.Logger == nil {
 		c.Logger = logger.NewNoopLogger()
 	}
@@ -48,6 +52,16 @@ func (c *Config) ApplyDefaults() {
 	if c.NumVersionsToCheck == 0 {
 		c.NumVersionsToCheck = 10
 	}
+
+	if c.KeyRing == nil {
+		keyring, err := crypto.NewKeyRing(key)
+		if err != nil {
+			return fmt.Errorf("could not build keyring for key %s: %w", key.GetHexKeyID(), err)
+		}
+		c.KeyRing = keyring
+	}
+
+	return nil
 }
 
 // WithVersionsToCheck is a functional option to set the number of versions to check for a provider.
@@ -78,6 +92,14 @@ func WithHTTPClient(httpClient *http.Client) Opt {
 func WithMaxParallelism(maxParallelism uint8) Opt {
 	return func(config *Config) error {
 		config.MaxParallelism = maxParallelism
+		return nil
+	}
+}
+
+// WithMaxParallelism is a functional option to set the function used to check the provider version
+func WithKeyring(keyring *crypto.KeyRing) Opt {
+	return func(config *Config) error {
+		config.KeyRing = keyring
 		return nil
 	}
 }

@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpg_signature
+package provider_key
 
 import (
 	"testing"
@@ -62,12 +62,12 @@ func TestValidSignature(t *testing.T) {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}
 
-	gpgKeyVerifier, err := New(testKey)
+	pk, err := New(testKey, nil)
 	if err != nil {
-		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
+		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
 
-	err = gpgKeyVerifier.Validate(signature, data)
+	err = pk.ValidateSignature(signature, data)
 	if err != nil {
 		t.Fatalf("Could not validate the signature (%v)", err)
 	}
@@ -82,12 +82,12 @@ func TestInvalidSignature(t *testing.T) {
 
 	signature := []byte("invalid_signature")
 
-	gpgKeyVerifier, err := New(testKey)
+	pk, err := New(testKey, nil)
 	if err != nil {
-		t.Fatalf("Failed to build gpgKeyVerifier (%v)", err)
+		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
 
-	err = gpgKeyVerifier.Validate(signature, data)
+	err = pk.ValidateSignature(signature, data)
 	if err == nil {
 		t.Fatalf("Err should be non-nil (%v)", err)
 	}

@@ -7,7 +7,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/opentofu/libregistry/internal/gpg_signature"
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
 )
@@ -16,13 +16,14 @@ import (
 type ProviderKey interface {
 	// VerifyProvider verifies if the key was used to sign a provider addr. It returns a list of the valid versions signed by this key.
 	VerifyProvider(ctx context.Context, provider provider.Addr) ([]provider.Version, error)
+	ValidateSignature(signature, data []byte) error
 }
 
 // New creates a new instance of the provider key verification package with the given f keyData (GPG ASCII-Armored PEM) and the metadata API. There are a few optional fields that can be used modify the behavior of the package.
 func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, error) {
-	gpgVerifier, err := gpg_signature.New(keyData)
+	key, err := crypto.NewKeyFromArmored(keyData)
 	if err != nil {
-		return nil, fmt.Errorf("cannot construct GPG key verifier: %w", err)
+		return nil, fmt.Errorf("could not parse armored key: %w", err)
 	}
 
 	config := Config{}
@@ -31,17 +32,15 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, err
 			return nil, err
 		}
 	}
-	config.ApplyDefaults()
+	config.ApplyDefaults(key)
 
 	return &providerKey{
-		config:      config,
-		gpgVerifier: gpgVerifier,
-		dataAPI:     dataAPI,
+		config:  config,
+		dataAPI: dataAPI,
 	}, nil
 }
 
 type providerKey struct {
-	config      Config
-	gpgVerifier gpg_signature.GPGKeyVerifier
-	dataAPI     metadata.API
+	config  Config
+	dataAPI metadata.API
 }
