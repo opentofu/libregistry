@@ -32,7 +32,11 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, err
 			return nil, err
 		}
 	}
-	config.ApplyDefaults(key)
+
+	err = config.ApplyDefaults(key)
+	if err != nil {
+		return nil, fmt.Errorf("failed to apply defaults: %w", err)
+	}
 
 	return &providerKey{
 		config:  config,
