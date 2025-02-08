@@ -96,7 +96,7 @@ func WithMaxParallelism(maxParallelism uint8) Opt {
 	}
 }
 
-// WithMaxParallelism is a functional option to set the function used to check the provider version
+// WithKeyring allows to define a PGP KeyRing
 func WithKeyring(keyring *crypto.KeyRing) Opt {
 	return func(config *Config) error {
 		config.KeyRing = keyring
