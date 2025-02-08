@@ -19,12 +19,13 @@ type Config struct {
 	// HTTPClient holds the HTTP client to use for API requests. Note that this only affects API and RSS feed requests,
 	// but not git clone commands as those are done using the command line.
 	HTTPClient *http.Client
-	// Number of versions that are going to be checked if they were signed
-	VersionsToCheck uint8
-	// Number of max parallelism used when checking the signatures for the versions
-	MaxParallelism uint8
 	// Keyring is used to test the PGP key
 	KeyRing *crypto.KeyRing
+
+	// Number of versions that are going to be checked if they were signed
+	VersionsToCheck uint8 // default: 10
+	// Number of max parallelism used when checking the signatures for the versions
+	MaxParallelism uint8 // default: 10
 }
 
 // Opt is a function that modifies the config.
