@@ -68,14 +68,23 @@ func generateTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptes
 	sig, data := generateSignedData(t, key, []byte("message"))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(expected)
+		_, err := w.Write(expected)
+		if err != nil {
+			t.Errorf("Couldn't write to testing response of /: %v", err)
+		}
 	})
 
 	mux.HandleFunc("/SHASumsURL/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(data)
+		_, err := w.Write(data)
+		if err != nil {
+			t.Errorf("Couldn't write to testing response of /SHASumsURL/: %v", err)
+		}
 	})
 	mux.HandleFunc("/SHASumsSignatureURL/", func(w http.ResponseWriter, r *http.Request) {
-		w.Write(sig)
+		_, err := w.Write(sig)
+		if err != nil {
+			t.Errorf("Couldn't write to testing response of /SHASumsSignatureURL/: %v", err)
+		}
 	})
 
 	srv := httptest.NewServer(mux)
