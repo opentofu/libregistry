@@ -143,7 +143,7 @@ func TestProviderConfig(t *testing.T) {
 		t.Fatalf("Failed to create provider key verifier: %v", err)
 	}
 
-	if pkv.(*providerKey).config.NumVersionsToCheck != 5 {
-		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKey).config.NumVersionsToCheck, 10)
+	if pkv.(*providerKey).config.VersionsToCheck != 5 {
+		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKey).config.VersionsToCheck, 10)
 	}
 }

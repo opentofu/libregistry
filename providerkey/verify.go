@@ -27,7 +27,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) (
 		return nil, fmt.Errorf("failed to get provider %s (%w)", addr, err)
 	}
 
-	toCheck := min(len(providerData.Versions), int(pk.config.NumVersionsToCheck))
+	toCheck := min(len(providerData.Versions), int(pk.config.VersionsToCheck))
 	var signedVersions []provider.Version
 
 	lock := &sync.Mutex{}

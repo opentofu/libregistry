@@ -20,7 +20,7 @@ type Config struct {
 	// but not git clone commands as those are done using the command line.
 	HTTPClient *http.Client
 	// Number of versions that are going to be checked if they were signed
-	NumVersionsToCheck uint8
+	VersionsToCheck uint8
 	// Number of max parallelism used when checking the signatures for the versions
 	MaxParallelism uint8
 	// Keyring is used to test the PGP key
@@ -49,8 +49,8 @@ func (c *Config) ApplyDefaults(key *crypto.Key) error {
 		c.MaxParallelism = 10
 	}
 
-	if c.NumVersionsToCheck == 0 {
-		c.NumVersionsToCheck = 10
+	if c.VersionsToCheck == 0 {
+		c.VersionsToCheck = 10
 	}
 
 	if c.KeyRing == nil {
@@ -67,7 +67,7 @@ func (c *Config) ApplyDefaults(key *crypto.Key) error {
 // WithVersionsToCheck is a functional option to set the number of versions to check for a provider.
 func WithNumVersionsToCheck(versionsToCheck uint8) Opt {
 	return func(config *Config) error {
-		config.NumVersionsToCheck = versionsToCheck
+		config.VersionsToCheck = versionsToCheck
 		return nil
 	}
 }
