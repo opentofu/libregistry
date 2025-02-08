@@ -34,7 +34,7 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 
 	lock := &sync.Mutex{}
 	parallelismSemaphore := make(chan struct{}, p.config.MaxParallelism)
-	g, ctx := errgroup.WithContext(context.Background())
+	g, ctx := errgroup.WithContext(ctx)
 
 	for _, version := range providerData.Versions[:toCheck] {
 		version := version
