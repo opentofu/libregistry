@@ -21,16 +21,14 @@ func (e *validationError) Error() string {
 	return fmt.Sprintf("%s", e.message)
 }
 
-func (pk *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]provider.Version, error) {
-	providerData, err := pk.dataAPI.GetProvider(ctx, providerAddr, false)
+func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) ([]provider.Version, error) {
+	providerData, err := pk.dataAPI.GetProvider(ctx, addr, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
+		return nil, fmt.Errorf("failed to get provider %s (%w)", addr, err)
 	}
 
-	var vError *validationError
-
 	toCheck := min(len(providerData.Versions), int(pk.config.NumVersionsToCheck))
-	var matchedVersions []provider.Version
+	var signedVersions []provider.Version
 
 	lock := &sync.Mutex{}
 	parallelismSemaphore := make(chan struct{}, pk.config.MaxParallelism)
@@ -46,6 +44,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, providerAddr provider
 			}()
 			if err := pk.check(ctx, version); err != nil {
 				// If the error is different from validation, we return the error.
+				var vError *validationError
 				if !errors.As(err, &vError) {
 					return err
 				}
@@ -54,7 +53,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, providerAddr provider
 			}
 
 			lock.Lock()
-			matchedVersions = append(matchedVersions, version)
+			signedVersions = append(signedVersions, version)
 			lock.Unlock()
 
 			return nil
@@ -65,7 +64,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, providerAddr provider
 		return nil, fmt.Errorf("error when verifying provider versions: %w", err)
 	}
 
-	return matchedVersions, nil
+	return signedVersions, nil
 }
 
 func (pk *providerKey) check(ctx context.Context, version provider.Version) error {

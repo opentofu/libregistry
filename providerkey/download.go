@@ -16,17 +16,17 @@ func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, er
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
-	response, err := pk.config.HTTPClient.Do(req)
+	res, err := pk.config.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}
-	defer response.Body.Close()
+	defer res.Body.Close()
 
-	if response.StatusCode != http.StatusOK {
+	if res.StatusCode != http.StatusOK {
 		return nil, fmt.Errorf("status code different from 200 %s: %w", url, err)
 	}
 
-	contents, err := io.ReadAll(response.Body)
+	contents, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read file from %s: %w", url, err)
 	}
