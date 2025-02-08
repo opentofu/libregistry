@@ -62,7 +62,7 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 	}
 
 	if err := g.Wait(); err != nil {
-		return nil, fmt.Errorf("error from errgroup: %w", err)
+		return nil, fmt.Errorf("error when verifying provider versions: %w", err)
 	}
 
 	return matchedVersions, nil
