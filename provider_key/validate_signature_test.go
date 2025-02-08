@@ -5,43 +5,14 @@ package provider_key
 
 import (
 	"testing"
-
-	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-// generateTestData receives a plain message and returns a public key and a signature
-func generateTestData(t *testing.T, plainMessage []byte) (string, []byte, error) {
-	// Generate a crypto key
-	key := generateKey(t)
-
-	signingKeyRing, err := crypto.NewKeyRing(key)
-	if err != nil {
-		return "", nil, err
-	}
-
-	dataToSign := crypto.NewPlainMessage(plainMessage)
-
-	signature, err := signingKeyRing.SignDetached(dataToSign)
-	if err != nil {
-		return "", nil, err
-	}
-
-	publicKey, err := key.GetArmoredPublicKey()
-	if err != nil {
-		return "", nil, err
-	}
-
-	return publicKey, signature.GetBinary(), nil
-}
-
 func TestValidSignature(t *testing.T) {
-	data := []byte("test\n")
-	testKey, signature, err := generateTestData(t, data)
-	if err != nil {
-		t.Fatalf("Failed to generate testData (%v)", err)
-	}
+	key := generateKey(t)
+	pubKey := getPubKey(t, key)
+	signature, data := generateSignedData(t, key, []byte("test\n"))
 
-	pk, err := New(testKey, nil)
+	pk, err := New(pubKey, nil)
 	if err != nil {
 		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
@@ -53,15 +24,12 @@ func TestValidSignature(t *testing.T) {
 }
 
 func TestInvalidSignature(t *testing.T) {
-	data := []byte("test_invalid\n")
-	testKey, _, err := generateTestData(t, data)
-	if err != nil {
-		t.Fatalf("Failed to generate testData (%v)", err)
-	}
+	key := generateKey(t)
+	pubKey := getPubKey(t, key)
+	anotherKey := generateKey(t)
+	signature, data := generateSignedData(t, anotherKey, []byte("invalid_signature\n"))
 
-	signature := []byte("invalid_signature")
-
-	pk, err := New(testKey, nil)
+	pk, err := New(pubKey, nil)
 	if err != nil {
 		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
