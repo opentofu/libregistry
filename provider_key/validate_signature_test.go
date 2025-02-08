@@ -7,33 +7,12 @@ import (
 	"testing"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
-
-// generateTestKey returns a PGP key
-func generateTestKey(t *testing.T) *crypto.Key {
-	armoredKey, err := helper.GenerateKey("", "test@opentofu.org", nil, "rsa", 1024)
-	if err != nil {
-		t.Error(err)
-	}
-
-	key, err := crypto.NewKeyFromArmored(armoredKey)
-	if err != nil {
-		t.Error(err)
-	}
-
-	unlockedKey, err := key.Unlock(nil)
-	if err != nil {
-		t.Error(err)
-	}
-
-	return unlockedKey
-}
 
 // generateTestData receives a plain message and returns a public key and a signature
 func generateTestData(t *testing.T, plainMessage []byte) (string, []byte, error) {
 	// Generate a crypto key
-	key := generateTestKey(t)
+	key := generateKey(t)
 
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
