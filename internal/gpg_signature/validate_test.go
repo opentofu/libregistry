@@ -31,37 +31,32 @@ func generateTestKey(t *testing.T) *crypto.Key {
 }
 
 // generateTestData receives a plain message and returns a public key and a signature
-func generateTestData(t *testing.T, plainMessage string) (string, string, error) {
+func generateTestData(t *testing.T, plainMessage []byte) (string, []byte, error) {
 	// Generate a crypto key
 	key := generateTestKey(t)
 
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
-	dataToSign := crypto.NewPlainMessageFromString(plainMessage)
+	dataToSign := crypto.NewPlainMessage(plainMessage)
 
 	signature, err := signingKeyRing.SignDetached(dataToSign)
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
 	publicKey, err := key.GetArmoredPublicKey()
 	if err != nil {
-		return "", "", err
+		return "", nil, err
 	}
 
-	armoredSignature, err := signature.GetArmored()
-	if err != nil {
-		return "", "", err
-	}
-
-	return publicKey, armoredSignature, nil
+	return publicKey, signature.GetBinary(), nil
 }
 
 func TestValidSignature(t *testing.T) {
-	data := "test\n"
+	data := []byte("test\n")
 	testKey, signature, err := generateTestData(t, data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
@@ -79,13 +74,13 @@ func TestValidSignature(t *testing.T) {
 }
 
 func TestInvalidSignature(t *testing.T) {
-	data := "test_invalid\n"
+	data := []byte("test_invalid\n")
 	testKey, _, err := generateTestData(t, data)
 	if err != nil {
 		t.Fatalf("Failed to generate testData (%v)", err)
 	}
 
-	signature := "invalid_signature"
+	signature := []byte("invalid_signature")
 
 	gpgKeyVerifier, err := New(testKey)
 	if err != nil {

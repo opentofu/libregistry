@@ -6,52 +6,45 @@ package provider_key
 import (
 	"context"
 	"testing"
+	"time"
 
-	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-type mockMetadata struct {
-	metadata.API
-}
-
-func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, test bool) (provider.Metadata, error) {
-	providerMetadata := provider.Metadata{
-		Versions: provider.VersionList{
-			provider.Version{
-				Version: "0.2.0",
-			},
-		},
-	}
-	return providerMetadata, nil
-}
-
-func TestProviderVerify(t *testing.T) {
-	metadataAPI := &mockMetadata{}
-	srv := generateTestServer(t, "test")
-	httpClient := srv.Client()
-
-	ctx := context.Background()
-
-	pubKey := generateTestPubKey(t)
-
-	pkv, err := New(pubKey, metadataAPI, WithHTTPClient(httpClient))
-
-	if err != nil {
-		t.Fatalf("Failed to create provider key verifier: %v", err)
-	}
-
+func TestProviderValidVerify(t *testing.T) {
+	pkv := setupProviderCall(t, "/SHASumsURL/", "/SHASumsSignatureURL/")
 	addr := provider.Addr{
 		Name:      "test",
 		Namespace: "opentofu",
 	}
 
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
 	data, err := pkv.VerifyProvider(ctx, addr)
 	if err != nil {
 		t.Fatalf("Failed to verify key: %v", err)
 	}
 
+	if len(data) == 0 {
+		t.Fatalf("Data has the wrong size: %d", len(data))
+	}
+
 	if data[0].Version != "0.2.0" {
 		t.Fatalf("Wrong version was returned %s", data[0])
+	}
+}
+
+func TestProviderInvalidVerify(t *testing.T) {
+	pkv := setupProviderCall(t, "/invalid", "/invalid")
+	addr := provider.Addr{
+		Name:      "test",
+		Namespace: "opentofu",
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+	defer cancel()
+	data, err := pkv.VerifyProvider(ctx, addr)
+	if err == nil {
+		t.Fatalf("Should have an verification error: %v, instead got data %s", err, data)
 	}
 }

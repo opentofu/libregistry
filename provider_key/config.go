@@ -44,6 +44,10 @@ func (c *Config) ApplyDefaults() {
 	if c.MaxParallelism == 0 {
 		c.MaxParallelism = 10
 	}
+
+	if c.NumVersionsToCheck == 0 {
+		c.NumVersionsToCheck = 10
+	}
 }
 
 // WithVersionsToCheck is a functional option to set the number of versions to check for a provider.

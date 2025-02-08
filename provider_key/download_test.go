@@ -4,17 +4,18 @@
 package provider_key
 
 import (
+	"bytes"
 	"context"
 	"testing"
 )
 
 func TestProviderDownload(t *testing.T) {
-	expectedData := "test"
-	srv := generateTestServer(t, expectedData)
+	expectedData := []byte("test")
+	key := generateKey(t)
+	srv := generateTestServer(t, key, expectedData)
 	httpClient := srv.Client()
 
-	pubKey := generateTestPubKey(t)
-
+	pubKey := getPubKey(t, key)
 	pkv, err := New(pubKey, nil, WithHTTPClient(httpClient))
 
 	if err != nil {
@@ -28,7 +29,7 @@ func TestProviderDownload(t *testing.T) {
 		t.Fatalf("Failed to download file: %v", err)
 	}
 
-	if data != expectedData {
+	if !bytes.Equal(data, expectedData) {
 		t.Fatalf("expected file data is: %s, got %s instead", expectedData, data)
 	}
 

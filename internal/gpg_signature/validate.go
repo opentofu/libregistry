@@ -9,12 +9,9 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-func (gv *gpgKeyVerifier) Validate(signature string, data string) error {
-	plainMessage := crypto.NewPlainMessageFromString(data)
-	pgpSignature, err := crypto.NewPGPSignatureFromArmored(signature)
-	if err != nil {
-		return fmt.Errorf("failed to create pgp signature: %w", err)
-	}
+func (gv *gpgKeyVerifier) Validate(signature []byte, data []byte) error {
+	plainMessage := crypto.NewPlainMessage(data)
+	pgpSignature := crypto.NewPGPSignature(signature)
 
 	if err := gv.keyring.VerifyDetached(plainMessage, pgpSignature, crypto.GetUnixTime()); err != nil {
 		return fmt.Errorf("failed to verify the detached signature: %w", err)
