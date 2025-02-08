@@ -61,7 +61,8 @@ func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []by
 	return pgpSignature.GetBinary(), plainMsg.GetBinary()
 }
 
-// generateTestServer used to mock the HTTP requests and return what's expected
+// generateTestServer is used to mock the HTTP requests and return the data
+// `/SHASumsURL/` and `/SHASumsSignatureURL/` are used to mimic the opentofu's registry API
 func generateTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptest.Server {
 	mux := http.NewServeMux()
 
