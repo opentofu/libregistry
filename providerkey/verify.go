@@ -48,7 +48,8 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) (
 				if !errors.As(err, &vError) {
 					return err
 				}
-				// If validation is failing, func is still returning because we still want the matched versions
+				// If validation is failing, func is still returning
+				// because we still want the matched versions
 				return nil
 			}
 
@@ -67,6 +68,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) (
 	return signedVersions, nil
 }
 
+// check is used to download the version's signature and data and validates it
 func (pk *providerKey) check(ctx context.Context, version provider.Version) error {
 	shaSumContents, err := pk.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
