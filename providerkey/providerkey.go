@@ -1,6 +1,8 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
+// Package providerkey is used to verify if GPG key were used to sign
+// OpenTofu providers, using its version and shaSumsURL and shaSumsSignatureURL.
 package providerkey
 
 import (
