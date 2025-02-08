@@ -21,19 +21,19 @@ func (e *validationError) Error() string {
 	return fmt.Sprintf("%s", e.message)
 }
 
-func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]provider.Version, error) {
-	providerData, err := p.dataAPI.GetProvider(ctx, providerAddr, false)
+func (pk *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.Addr) ([]provider.Version, error) {
+	providerData, err := pk.dataAPI.GetProvider(ctx, providerAddr, false)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get provider %s (%w)", providerAddr, err)
 	}
 
 	var vError *validationError
 
-	toCheck := min(len(providerData.Versions), int(p.config.NumVersionsToCheck))
+	toCheck := min(len(providerData.Versions), int(pk.config.NumVersionsToCheck))
 	var matchedVersions []provider.Version
 
 	lock := &sync.Mutex{}
-	parallelismSemaphore := make(chan struct{}, p.config.MaxParallelism)
+	parallelismSemaphore := make(chan struct{}, pk.config.MaxParallelism)
 	g, ctx := errgroup.WithContext(ctx)
 
 	for _, version := range providerData.Versions[:toCheck] {
@@ -44,7 +44,7 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 			defer func() {
 				<-parallelismSemaphore
 			}()
-			if err := p.check(ctx, version); err != nil {
+			if err := pk.check(ctx, version); err != nil {
 				// If the error is different from validation, we return the error.
 				if !errors.As(err, &vError) {
 					return err
