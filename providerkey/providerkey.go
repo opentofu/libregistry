@@ -12,10 +12,11 @@ import (
 	"github.com/opentofu/libregistry/types/provider"
 )
 
-// Verifier describes the functions for verifying if a key was used to sign a list of providers.
+// ProviderKey describes the functions for verifying if a key was used to sign a list of providers.
 type ProviderKey interface {
 	// VerifyProvider verifies if the key was used to sign a provider addr. It returns a list of the valid versions signed by this key.
 	VerifyProvider(ctx context.Context, provider provider.Addr) ([]provider.Version, error)
+	// ValidateSignature validates if the signature was used to sign the data. The keyring used is initialized on New.
 	ValidateSignature(signature, data []byte) error
 }
 
