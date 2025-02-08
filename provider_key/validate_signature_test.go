@@ -24,12 +24,12 @@ func TestValidSignature(t *testing.T) {
 }
 
 func TestInvalidSignature(t *testing.T) {
-	key := generateKey(t)
-	pubKey := getPubKey(t, key)
-	anotherKey := generateKey(t)
-	signature, data := generateSignedData(t, anotherKey, []byte("invalid_signature\n"))
+	key1 := generateKey(t)
+	signature, data := generateSignedData(t, key1, []byte("test\n"))
 
-	pk, err := New(pubKey, nil)
+	key2 := generateKey(t)
+	pubKey2 := getPubKey(t, key2)
+	pk, err := New(pubKey2, nil)
 	if err != nil {
 		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
