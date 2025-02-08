@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/opentofu/libregistry/types/provider"
+	"golang.org/x/sync/errgroup"
 )
 
 type validationError struct {
@@ -32,29 +33,24 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 	var matchedVersions []provider.Version
 
 	lock := &sync.Mutex{}
-	wg := &sync.WaitGroup{}
-	versions := providerData.Versions[:toCheck]
-	wg.Add(len(versions))
 	parallelismSemaphore := make(chan struct{}, p.config.MaxParallelism)
-	errorsCh := make(chan error, len(versions))
+	g, ctx := errgroup.WithContext(context.Background())
 
 	for _, version := range providerData.Versions[:toCheck] {
 		version := version
-		go func() error {
+		g.Go(func() error {
 
 			parallelismSemaphore <- struct{}{}
 			defer func() {
 				<-parallelismSemaphore
 			}()
-			defer wg.Done()
 			if err := p.check(ctx, version); err != nil {
 				// If the error is different from validation, we return the error.
-				// If validation is failing, func is still returning because we still want the matched versions
-				errorsCh <- err
 				if !errors.As(err, &vError) {
-					errorsCh <- err
 					return err
 				}
+				// If validation is failing, func is still returning because we still want the matched versions
+				return nil
 			}
 
 			lock.Lock()
@@ -62,16 +58,14 @@ func (p *providerKey) VerifyProvider(ctx context.Context, providerAddr provider.
 			lock.Unlock()
 
 			return nil
-		}()
+		})
 	}
 
-	wg.Wait()
-	select {
-	case err := <-errorsCh:
-		return nil, err
-	default:
-		return matchedVersions, nil
+	if err := g.Wait(); err != nil {
+		return nil, fmt.Errorf("error from errgroup: %w", err)
 	}
+
+	return matchedVersions, nil
 }
 
 func (p *providerKey) check(ctx context.Context, version provider.Version) error {

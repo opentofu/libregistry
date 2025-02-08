@@ -22,7 +22,7 @@ func TestProviderValidVerify(t *testing.T) {
 	defer cancel()
 	data, err := pkv.VerifyProvider(ctx, addr)
 	if err != nil {
-		t.Fatalf("Failed to verify key: %v", err)
+		t.Fatalf("Failed to verify provider: %v", err)
 	}
 
 	if len(data) == 0 {
@@ -44,7 +44,11 @@ func TestProviderInvalidVerify(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	defer cancel()
 	data, err := pkv.VerifyProvider(ctx, addr)
-	if err == nil {
-		t.Fatalf("Should have an verification error: %v, instead got data %s", err, data)
+	if err != nil {
+		t.Fatalf("Failed to verify provider: %v", err)
+	}
+
+	if len(data) != 0 {
+		t.Fatalf("Data size should be 0, instead is: %d", len(data))
 	}
 }
