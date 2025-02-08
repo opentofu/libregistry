@@ -37,7 +37,7 @@ func generateTestPubKey(t *testing.T) string {
 	return pubKey
 }
 
-func generateTestClient(t *testing.T, expected string) *http.Client {
+func generateTestServer(t *testing.T, expected string) *httptest.Server {
 	srv := httptest.NewServer(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Write([]byte(expected))
@@ -47,11 +47,12 @@ func generateTestClient(t *testing.T, expected string) *http.Client {
 	t.Cleanup(func() {
 		srv.Close()
 	})
-	return srv.Client()
+	return srv
 }
 
 func TestProviderConfig(t *testing.T) {
-	httpClient := generateTestClient(t, "test")
+	srv := generateTestServer(t, "test")
+	httpClient := srv.Client()
 	pubKey := generateTestPubKey(t)
 
 	pkv, err := New(pubKey, nil, WithNumVersionsToCheck(5), WithHTTPClient(httpClient))

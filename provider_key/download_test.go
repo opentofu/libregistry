@@ -10,7 +10,9 @@ import (
 
 func TestProviderDownload(t *testing.T) {
 	expectedData := "test"
-	httpClient := generateTestClient(t, expectedData)
+	srv := generateTestServer(t, expectedData)
+	httpClient := srv.Client()
+
 	pubKey := generateTestPubKey(t)
 
 	pkv, err := New(pubKey, nil, WithHTTPClient(httpClient))
@@ -20,7 +22,7 @@ func TestProviderDownload(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	data, err := pkv.(*providerKey).downloadFile(ctx, "https://example.com/test.txt")
+	data, err := pkv.(*providerKey).downloadFile(ctx, srv.URL)
 
 	if err != nil {
 		t.Fatalf("Failed to download file: %v", err)
