@@ -97,27 +97,29 @@ func generateTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptes
 
 type mockMetadata struct {
 	metadata.API
+	shaSumsURL          string
+	shaSumsSignatureURL string
 }
-
-var versions provider.Metadata
 
 func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, resolveAliases bool) (provider.Metadata, error) {
-	return versions, nil
-}
-
-func setupProviderCall(t *testing.T, shaSumsURL string, shaSumsSignatureURL string) ProviderKey {
-	metadataAPI := &mockMetadata{}
-	key := generateKey(t)
-	pubKey := getPubKey(t, key)
-	srv := generateTestServer(t, key, []byte("test"))
-	versions = provider.Metadata{
+	return provider.Metadata{
 		Versions: provider.VersionList{
 			provider.Version{
 				Version:             "0.2.0",
-				SHASumsURL:          srv.URL + shaSumsURL,
-				SHASumsSignatureURL: srv.URL + shaSumsSignatureURL,
+				SHASumsURL:          m.shaSumsURL,
+				SHASumsSignatureURL: m.shaSumsSignatureURL,
 			},
 		},
+	}, nil
+}
+
+func setupProviderCall(t *testing.T, shaSumsURL string, shaSumsSignatureURL string) ProviderKey {
+	key := generateKey(t)
+	pubKey := getPubKey(t, key)
+	srv := generateTestServer(t, key, []byte("test"))
+	metadataAPI := &mockMetadata{
+		shaSumsURL:          srv.URL + shaSumsURL,
+		shaSumsSignatureURL: srv.URL + shaSumsSignatureURL,
 	}
 
 	httpClient := srv.Client()
