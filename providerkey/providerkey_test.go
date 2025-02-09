@@ -18,17 +18,17 @@ import (
 func generateKey(t *testing.T) *crypto.Key {
 	armoredKey, err := helper.GenerateKey("opentofu", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("error when generating the armored string: %v", err)
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("error when creating a new key from armored string: %v", err)
 	}
 
 	unlockedKey, err := key.Unlock(nil)
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("error when unlocking the key: %v", err)
 	}
 
 	return unlockedKey
@@ -38,7 +38,7 @@ func generateKey(t *testing.T) *crypto.Key {
 func getPubKey(t *testing.T, key *crypto.Key) string {
 	pubKey, err := key.GetArmoredPublicKey()
 	if err != nil {
-		t.Error(err)
+		t.Fatalf("failed to get the armored public key: %v", err)
 	}
 
 	return pubKey
@@ -50,12 +50,12 @@ func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []by
 
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
-		t.Error("failed to create a new key ring", err)
+		t.Fatalf("failed to create a new key ring: %v", err)
 	}
 
 	pgpSignature, err := signingKeyRing.SignDetached(plainMsg)
 	if err != nil {
-		t.Error("failed to sign detached", err)
+		t.Fatalf("failed to sign detached: %v", err)
 	}
 
 	return pgpSignature.GetBinary(), plainMsg.GetBinary()
@@ -71,20 +71,20 @@ func generateTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptes
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write(expected)
 		if err != nil {
-			t.Errorf("Couldn't write to testing response of /: %v", err)
+			t.Fatalf("Couldn't write to testing response of /: %v", err)
 		}
 	})
 
 	mux.HandleFunc("/SHASumsURL/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write(data)
 		if err != nil {
-			t.Errorf("Couldn't write to testing response of /SHASumsURL/: %v", err)
+			t.Fatalf("Couldn't write to testing response of /SHASumsURL/: %v", err)
 		}
 	})
 	mux.HandleFunc("/SHASumsSignatureURL/", func(w http.ResponseWriter, r *http.Request) {
 		_, err := w.Write(sig)
 		if err != nil {
-			t.Errorf("Couldn't write to testing response of /SHASumsSignatureURL/: %v", err)
+			t.Fatalf("Couldn't write to testing response of /SHASumsSignatureURL/: %v", err)
 		}
 	})
 
