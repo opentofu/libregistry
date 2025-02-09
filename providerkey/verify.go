@@ -49,7 +49,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) 
 				if !errors.As(err, &vError) {
 					return err
 				}
-				// If validation signature is failing, the version is not added to the signed versions list.
+				// If signature's validation is failing, the version is not added to the signed versions list.
 				return nil
 			}
 
