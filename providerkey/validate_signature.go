@@ -4,12 +4,15 @@
 package providerkey
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
+	"github.com/opentofu/libregistry/types/provider"
 )
 
-func (pk *providerKey) ValidateSignature(signature, data []byte) error {
+func (pk *providerKey) ValidateSignature(ctx context.Context, pAddr provider.Addr, signature, data []byte) error {
+	pk.config.Logger.Info(ctx, "Validating signature with key %s for provider %s...", pk.key.GetHexKeyID(), pAddr.Name)
 	plainMessage := crypto.NewPlainMessage(data)
 	pgpSignature := crypto.NewPGPSignature(signature)
 

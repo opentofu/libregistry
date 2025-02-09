@@ -4,7 +4,10 @@
 package providerkey
 
 import (
+	"context"
 	"testing"
+
+	"github.com/opentofu/libregistry/types/provider"
 )
 
 func TestValidSignature(t *testing.T) {
@@ -17,7 +20,8 @@ func TestValidSignature(t *testing.T) {
 		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
 
-	err = pk.ValidateSignature(signature, data)
+	p := provider.Addr{Name: "test"}
+	err = pk.ValidateSignature(context.Background(), p, signature, data)
 	if err != nil {
 		t.Fatalf("Could not validate the signature (%v)", err)
 	}
@@ -34,7 +38,8 @@ func TestInvalidSignature(t *testing.T) {
 		t.Fatalf("Failed to build ProviderKey (%v)", err)
 	}
 
-	err = pk.ValidateSignature(signature, data)
+	p := provider.Addr{Name: "test"}
+	err = pk.ValidateSignature(context.Background(), p, signature, data)
 	if err == nil {
 		t.Fatalf("Err should be non-nil (%v)", err)
 	}

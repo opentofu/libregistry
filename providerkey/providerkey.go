@@ -21,7 +21,7 @@ type ProviderKey interface {
 	VerifyProvider(ctx context.Context, provider provider.Addr) ([]provider.Version, error)
 	// ValidateSignature validates if the signature was used to sign the data.
 	// The keyring used is initialized on New.
-	ValidateSignature(signature, data []byte) error
+	ValidateSignature(ctx context.Context, provider provider.Addr, signature, data []byte) error
 }
 
 // New creates a new instance of the provider key verification package with
@@ -46,6 +46,7 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, err
 	}
 
 	return &providerKey{
+		key:     key,
 		config:  config,
 		dataAPI: dataAPI,
 	}, nil
@@ -53,5 +54,6 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, err
 
 type providerKey struct {
 	config  Config
+	key     *crypto.Key
 	dataAPI metadata.API
 }

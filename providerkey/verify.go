@@ -21,10 +21,11 @@ func (e *validationError) Error() string {
 	return fmt.Sprintf("%s", e.message)
 }
 
-func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) ([]provider.Version, error) {
-	providerData, err := pk.dataAPI.GetProvider(ctx, addr, false)
+func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) ([]provider.Version, error) {
+	pk.config.Logger.Info(ctx, "Verifying provider %s...", pAddr.Name)
+	providerData, err := pk.dataAPI.GetProvider(ctx, pAddr, false)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get provider %s (%w)", addr, err)
+		return nil, fmt.Errorf("failed to get provider %s (%w)", pAddr, err)
 	}
 
 	toCheck := min(len(providerData.Versions), int(pk.config.VersionsToCheck))
@@ -42,7 +43,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) (
 			defer func() {
 				<-parallelismSemaphore
 			}()
-			if err := pk.check(ctx, version); err != nil {
+			if err := pk.check(ctx, pAddr, version); err != nil {
 				// If the error is different from validation, we return the error.
 				var vError *validationError
 				if !errors.As(err, &vError) {
@@ -69,7 +70,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, addr provider.Addr) (
 }
 
 // check is used to download the version's signature and data and validates it
-func (pk *providerKey) check(ctx context.Context, version provider.Version) error {
+func (pk *providerKey) check(ctx context.Context, p provider.Addr, version provider.Version) error {
 	shaSumContents, err := pk.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
 		return fmt.Errorf("failed to download SHASums URL: %w", err)
@@ -80,7 +81,7 @@ func (pk *providerKey) check(ctx context.Context, version provider.Version) erro
 		return fmt.Errorf("failed to download SHASums signature URL for provider: %w", err)
 	}
 
-	if err := pk.ValidateSignature(signature, shaSumContents); err != nil {
+	if err := pk.ValidateSignature(ctx, p, signature, shaSumContents); err != nil {
 		return &validationError{
 			message: fmt.Errorf("failed to validate signature for provider: %w", err),
 		}
