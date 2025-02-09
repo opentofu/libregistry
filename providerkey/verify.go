@@ -44,13 +44,12 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) 
 				<-parallelismSemaphore
 			}()
 			if err := pk.check(ctx, pAddr, version); err != nil {
-				// If the error is different from validation, we return the error.
 				var vError *validationError
+				// If it isn't a validation error, like a network error, we return it and fail the function.
 				if !errors.As(err, &vError) {
 					return err
 				}
-				// If validation is failing, func is still returning
-				// because we still want the matched versions
+				// If validation signature is failing, the version is not added to the signed versions list.
 				return nil
 			}
 
@@ -69,7 +68,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) 
 	return signedVersions, nil
 }
 
-// check is used to download the version's signature and data and validates it
+// check is used to download the version's signature and data and validates it with the keyring.
 func (pk *providerKey) check(ctx context.Context, p provider.Addr, version provider.Version) error {
 	shaSumContents, err := pk.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
