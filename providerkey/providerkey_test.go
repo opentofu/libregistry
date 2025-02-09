@@ -18,17 +18,17 @@ import (
 func generateKey(t *testing.T) *crypto.Key {
 	armoredKey, err := helper.GenerateKey("opentofu", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
-		t.Fatalf("error when generating the armored string: %v", err)
+		t.Fatalf("Error when generating the armored string: %v", err)
 	}
 
 	key, err := crypto.NewKeyFromArmored(armoredKey)
 	if err != nil {
-		t.Fatalf("error when creating a new key from armored string: %v", err)
+		t.Fatalf("Error when creating a new key from armored string: %v", err)
 	}
 
 	unlockedKey, err := key.Unlock(nil)
 	if err != nil {
-		t.Fatalf("error when unlocking the key: %v", err)
+		t.Fatalf("Error when unlocking the key: %v", err)
 	}
 
 	return unlockedKey
@@ -38,7 +38,7 @@ func generateKey(t *testing.T) *crypto.Key {
 func getPubKey(t *testing.T, key *crypto.Key) string {
 	pubKey, err := key.GetArmoredPublicKey()
 	if err != nil {
-		t.Fatalf("failed to get the armored public key: %v", err)
+		t.Fatalf("Failed to get the armored public key: %v", err)
 	}
 
 	return pubKey
@@ -50,12 +50,12 @@ func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []by
 
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
-		t.Fatalf("failed to create a new key ring: %v", err)
+		t.Fatalf("Failed to create a new key ring: %v", err)
 	}
 
 	pgpSignature, err := signingKeyRing.SignDetached(plainMsg)
 	if err != nil {
-		t.Fatalf("failed to sign detached: %v", err)
+		t.Fatalf("Failed to sign detached: %v", err)
 	}
 
 	return pgpSignature.GetBinary(), plainMsg.GetBinary()
