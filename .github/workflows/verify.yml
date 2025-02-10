@@ -32,7 +32,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-2025, macos-latest]
+        os: [ubuntu-latest, windows-2019, macos-latest]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -43,6 +43,6 @@ jobs:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          go test -race -v ./... -run TestCloneNotFound
+          go test ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
