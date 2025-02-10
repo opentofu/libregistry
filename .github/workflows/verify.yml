@@ -54,13 +54,10 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: D:\app
+        working-directory: D:\
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Dev Drive
-        if: runner.os == 'Windows'
-        run: ${{ github.workspace }}/.github/workflows/setup-dev-drive.ps1
       - name: Setup go
         uses: actions/setup-go@v5
         with:
