@@ -66,6 +66,6 @@ jobs:
         run: |
           ls a\opentofu-libregistry\opentofu-libregistry
           pwd
-          go test -timeout 60m D:/a/opentofu-libregistry/opentofu-libregistry/./...
+          go test -timeout 60m D:\a\opentofu-libregistry\opentofu-libregistry\...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
