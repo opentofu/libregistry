@@ -183,7 +183,7 @@ func TestCloneNotFound(t *testing.T) {
 	const testRepo = "nonexistent"
 	const testVersion = "v1.6.0"
 
-	checkoutDir := "D:\\"
+	checkoutDir := "D:"
 
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
