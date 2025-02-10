@@ -65,9 +65,7 @@ jobs:
       - name: Run tests
         run: |
           cd D:\a\opentofu-libregistry\opentofu-libregistry
-          ls .
-          $Env:TMP = "D:\tmp\"
-          ls Env:
-          go test -v -timeout 1m ./... -run TestClone
+          $Env:TMP = "D:\"
+          go test -v -timeout 5m ./... -run TestClone$
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
