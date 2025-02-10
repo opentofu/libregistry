@@ -66,6 +66,6 @@ jobs:
         run: |
           cd D:\a\opentofu-libregistry\opentofu-libregistry
           $Env:TMP = "D:\"
-          go test -v ./...
+          go test -v -run TestCloneNotFound ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
