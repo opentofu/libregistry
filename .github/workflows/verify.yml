@@ -32,7 +32,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [ubuntu, macos]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout
@@ -67,6 +67,7 @@ jobs:
           cd D:\a\opentofu-libregistry\opentofu-libregistry
           ls .
           set TMPDIR=D:\tmp\
+          set TEMP=D:\tmp\
           go test -v -timeout 2m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
