@@ -42,6 +42,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run tests
+        timeout-minutes: 60
         run: |
           go test ./...
         env:
