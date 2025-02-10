@@ -32,7 +32,7 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        os: [ubuntu, macos]
+        os: [ubuntu, macos, windows]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout
@@ -46,7 +46,7 @@ jobs:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          go test -timeout 60m ./...
+          go test -timeout 120m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   windows-tests:
@@ -66,6 +66,6 @@ jobs:
         run: |
           cd D:\a\opentofu-libregistry\opentofu-libregistry
           ls .
-          go test -v -timeout 60m ./...
+          go test -v -timeout 120m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
