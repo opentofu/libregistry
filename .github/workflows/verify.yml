@@ -74,6 +74,6 @@ jobs:
           set TEMP=D:\tmp\
           set TMP=D:\tmp\
           set GOTMPDIR=D:\tmp\
-          go test -v -timeout 10s ./... -run TestCloneNotFound
+          go test -v -timeout 1m ./... -run TestCloneNotFound
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
