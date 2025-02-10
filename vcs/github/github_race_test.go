@@ -5,12 +5,13 @@ package github_test
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/vcs"
 	"github.com/opentofu/libregistry/vcs/github"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"testing"
 )
 
 func TestCloneRace(t *testing.T) {
@@ -20,7 +21,7 @@ func TestCloneRace(t *testing.T) {
 	const testRepo = "terraform-provider-tfcoremock"
 	const testVersion = "v0.3.0"
 
-	checkoutDir := t.TempDir()
+	checkoutDir := os.TempDir()
 
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),

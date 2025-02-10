@@ -140,7 +140,7 @@ func TestClone(t *testing.T) {
 	const testRepo = "terraform-provider-github"
 	const testVersion = "v6.2.3"
 
-	checkoutDir := "D:\\"
+	checkoutDir := os.TempDir()
 
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
@@ -183,7 +183,7 @@ func TestCloneNotFound(t *testing.T) {
 	const testRepo = "nonexistent"
 	const testVersion = "v1.6.0"
 
-	checkoutDir := "D:"
+	checkoutDir := os.TempDir()
 
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
@@ -214,7 +214,7 @@ func TestURL(t *testing.T) {
 	const testVersion = "v1.6.0"
 	const testFile = "README.md"
 
-	checkoutDir := "D:\\"
+	checkoutDir := os.TempDir()
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
 		github.WithLogger(logger.NewTestLogger(t)),
