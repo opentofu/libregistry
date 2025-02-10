@@ -66,6 +66,7 @@ jobs:
         run: |
           cd D:\a\opentofu-libregistry\opentofu-libregistry
           ls .
-          go test -v -timeout 120m ./...
+          set TMPDIR=D:\tmp\
+          go test -v -timeout 2m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
