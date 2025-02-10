@@ -30,7 +30,7 @@ func TestProviderDownload(t *testing.T) {
 	}
 
 	if !bytes.Equal(data, expectedData) {
-		t.Fatalf("expected file data is: %s, got %s instead", expectedData, data)
+		t.Fatalf("Expected file data is: %s, got %s instead", expectedData, data)
 	}
 
 }
