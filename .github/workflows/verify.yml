@@ -54,7 +54,7 @@ jobs:
     runs-on: windows-latest
     defaults:
       run:
-        working-directory: D:\a\
+        working-directory: D:\
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +64,6 @@ jobs:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          go test -timeout 60m ./...
+          go test -timeout 60m D:/a/opentofu-libregistry/opentofu-libregistry/./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
