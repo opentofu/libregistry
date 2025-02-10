@@ -42,8 +42,7 @@ jobs:
         with:
           go-version-file: 'go.mod'
       - name: Run tests
-        timeout-minutes: 60
         run: |
-          go test ./...
+          go test -timeout 60m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
