@@ -64,7 +64,7 @@ jobs:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          ls a\opentofu-libregistry\opentofu-libregistry
+          cd D:\a\opentofu-libregistry\opentofu-libregistry
           ls .
           go test ./...
         env:
