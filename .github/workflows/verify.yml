@@ -69,6 +69,7 @@ jobs:
           set "TMPDIR=D:\tmp\"
           set "TEMP=D:\tmp\"
           set "TMP=D:\tmp\"
+          set "GOTMPDIR=D:\tmp\"
           go test -v -timeout 2m ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
