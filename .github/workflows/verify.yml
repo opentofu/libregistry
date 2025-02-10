@@ -64,7 +64,7 @@ jobs:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          ls
+          ls a
           pwd
           go test -timeout 60m D:/a/opentofu-libregistry/opentofu-libregistry/./...
         env:
