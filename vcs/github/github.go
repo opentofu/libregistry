@@ -309,7 +309,6 @@ func (w *workingCopy) checkout(ctx context.Context, version vcs.VersionNumber) e
 		100*time.Millisecond,
 		w.g.config.Logger,
 	); err != nil {
-		w.g.config.Logger.Error(ctx, "DIO: %v", err)
 		if !is128Retryable(err) {
 			// Checkout failed, see if tag exists.
 			tagExists, e := w.tagExists(ctx, version)

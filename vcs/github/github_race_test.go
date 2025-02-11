@@ -21,7 +21,7 @@ func TestCloneRace(t *testing.T) {
 	const testRepo = "terraform-provider-tfcoremock"
 	const testVersion = "v0.3.0"
 
-	checkoutDir := os.TempDir()
+	checkoutDir := t.TempDir()
 
 	gh, err := github.New(
 		github.WithCheckoutRootDirectory(checkoutDir),
