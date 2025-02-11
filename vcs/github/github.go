@@ -432,6 +432,7 @@ func (w *workingCopy) listRefs(ctx context.Context) (*bytes.Buffer, error) {
 }
 
 func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ...string) error {
+	params = append([]string{"-c", "credential.helper="}, params...)
 	cmd := exec.Command(g.config.GitPath, params...)
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
 	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)

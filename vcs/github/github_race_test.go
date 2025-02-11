@@ -5,12 +5,13 @@ package github_test
 
 import (
 	"context"
+	"os"
+	"testing"
+
 	"github.com/opentofu/libregistry/logger"
 	"github.com/opentofu/libregistry/vcs"
 	"github.com/opentofu/libregistry/vcs/github"
 	"golang.org/x/sync/errgroup"
-	"os"
-	"testing"
 )
 
 func TestCloneRace(t *testing.T) {
