@@ -47,6 +47,6 @@ jobs:
       - name: Run tests
         run: |
           # this is used to remove the prompt from Git on Windows, causing the runner to hang when testing the inexistent repo.
-          go test -timeout ./...
+          go test ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
