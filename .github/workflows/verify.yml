@@ -37,9 +37,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Dev Drive
+      - name: Disable git prompt
         if: runner.os == 'Windows'
-        run: ${{ github.workspace }}/.github/workflows/setup-dev-drive.ps1
+        run: git config --system --unset credential.helper
       - name: Setup go
         uses: actions/setup-go@v5
         with:
@@ -47,7 +47,6 @@ jobs:
       - name: Run tests
         run: |
           # this is used to remove the prompt from Git on Windows, causing the runner to hang when testing the inexistent repo.
-          git config --system --unset credential.helper
           go test -timeout ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
