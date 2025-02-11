@@ -37,11 +37,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Disable git prompt for credentials manager in Windows
-        if: runner.os == 'Windows'
-        run: |
-          # this is used to remove the prompt from Git on Windows, causing the runner to hang when testing the inexistent repo.
-          git config --system --unset credential.helper
       - name: Setup go
         uses: actions/setup-go@v5
         with:
