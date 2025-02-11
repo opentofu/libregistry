@@ -32,21 +32,22 @@ jobs:
     name: Tests
     strategy:
       matrix:
-        os: [ubuntu, macos, windows]
+        os: [ubuntu, windows, macos]
     runs-on: ${{ matrix.os }}-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Disable git prompt
+      - name: Disable git prompt for credentials manager in Windows
         if: runner.os == 'Windows'
-        run: git config --system --unset credential.helper
+        run: |
+          # this is used to remove the prompt from Git on Windows, causing the runner to hang when testing the inexistent repo.
+          git config --system --unset credential.helper
       - name: Setup go
         uses: actions/setup-go@v5
         with:
           go-version-file: 'go.mod'
       - name: Run tests
         run: |
-          # this is used to remove the prompt from Git on Windows, causing the runner to hang when testing the inexistent repo.
           go test ./...
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
