@@ -17,6 +17,8 @@ import (
 )
 
 func TestRepoInfo(t *testing.T) {
+	t.Parallel()
+
 	const testOrg = "opentofu"
 	const testRepo = "opentofu"
 
@@ -92,6 +94,8 @@ func TestReleases(t *testing.T) {
 }
 
 func TestTags(t *testing.T) {
+	t.Parallel()
+
 	const testOrg = "integrations"
 	const testRepo = "terraform-provider-github"
 	const testVersion = "v6.2.3"
@@ -136,6 +140,8 @@ func TestTags(t *testing.T) {
 }
 
 func TestClone(t *testing.T) {
+	t.Parallel()
+
 	const testOrg = "integrations"
 	const testRepo = "terraform-provider-github"
 	const testVersion = "v6.2.3"
@@ -175,6 +181,8 @@ func TestClone(t *testing.T) {
 }
 
 func TestCloneNotFound(t *testing.T) {
+	t.Parallel()
+
 	var notFound *vcs.RepositoryNotFoundError
 
 	t.Logf("⚙️ Checking if cloning a non-existent repository correctly returns a %T...", notFound)
@@ -208,6 +216,8 @@ func TestCloneNotFound(t *testing.T) {
 }
 
 func TestURL(t *testing.T) {
+	t.Parallel()
+
 	t.Logf("⚙️ Checking if the GitHub abstraction returns the correct URLs...")
 	const testOrg = "opentofu"
 	const testRepo = "opentofu"
