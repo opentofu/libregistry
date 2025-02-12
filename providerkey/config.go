@@ -12,7 +12,11 @@ import (
 	"github.com/opentofu/libregistry/logger"
 )
 
-// Config holds the configuration for GitHub.
+const (
+	_versionsToCheck uint8 = 10
+)
+
+// Config holds the configuration for ProviderKey.
 type Config struct {
 	// Logger holds the logger to write any logs to.
 	Logger logger.Logger
@@ -51,7 +55,7 @@ func (c *Config) ApplyDefaults(key *crypto.Key) error {
 	}
 
 	if c.VersionsToCheck == 0 {
-		c.VersionsToCheck = 10
+		c.VersionsToCheck = _versionsToCheck
 	}
 
 	if c.KeyRing == nil {

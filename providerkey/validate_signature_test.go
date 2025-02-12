@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/opentofu/libregistry/types/provider"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidSignature(t *testing.T) {
@@ -16,15 +17,11 @@ func TestValidSignature(t *testing.T) {
 	signature, data := generateSignedData(t, key, []byte("test\n"))
 
 	pk, err := New(pubKey, nil)
-	if err != nil {
-		t.Fatalf("Failed to build ProviderKey (%v)", err)
-	}
+	require.NoError(t, err)
 
 	p := provider.Addr{Name: "test"}
 	err = pk.ValidateSignature(context.Background(), p, signature, data)
-	if err != nil {
-		t.Fatalf("Could not validate the signature (%v)", err)
-	}
+	require.NoError(t, err)
 }
 
 func TestInvalidSignature(t *testing.T) {
@@ -34,13 +31,9 @@ func TestInvalidSignature(t *testing.T) {
 	key2 := generateKey(t)
 	pubKey2 := getPubKey(t, key2)
 	pk, err := New(pubKey2, nil)
-	if err != nil {
-		t.Fatalf("Failed to build ProviderKey (%v)", err)
-	}
+	require.NoError(t, err)
 
 	p := provider.Addr{Name: "test"}
 	err = pk.ValidateSignature(context.Background(), p, signature, data)
-	if err == nil {
-		t.Fatalf("Err should be non-nil (%v)", err)
-	}
+	require.Error(t, err)
 }

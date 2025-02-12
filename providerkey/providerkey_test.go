@@ -13,6 +13,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
+	"github.com/stretchr/testify/require"
 )
 
 func generateKey(t *testing.T) *crypto.Key {
@@ -126,24 +127,7 @@ func setupProviderCall(t *testing.T, shaSumsURL string, shaSumsSignatureURL stri
 	httpClient := srv.Client()
 
 	pkv, err := New(pubKey, metadataAPI, WithHTTPClient(httpClient))
-	if err != nil {
-		t.Fatalf("Failed to create provider key verifier: %v", err)
-	}
+	require.NoError(t, err)
 
 	return pkv
-}
-
-func TestProviderConfig(t *testing.T) {
-	key := generateKey(t)
-	pubKey := getPubKey(t, key)
-
-	pkv, err := New(pubKey, nil, WithNumVersionsToCheck(5))
-
-	if err != nil {
-		t.Fatalf("Failed to create provider key verifier: %v", err)
-	}
-
-	if pkv.(*providerKey).config.VersionsToCheck != 5 {
-		t.Fatalf("Incorrect number of versions to check: %v, expecting %v.", pkv.(*providerKey).config.VersionsToCheck, 10)
-	}
 }

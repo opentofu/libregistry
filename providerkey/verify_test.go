@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/opentofu/libregistry/types/provider"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProviderValidVerify(t *testing.T) {
@@ -21,17 +23,11 @@ func TestProviderValidVerify(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	data, err := pkv.VerifyProvider(ctx, addr)
-	if err != nil {
-		t.Fatalf("Failed to verify provider: %v", err)
-	}
+	require.NoError(t, err)
 
-	if len(data) == 0 {
-		t.Fatalf("Data has the wrong size: %d", len(data))
-	}
+	assert.NotEqual(t, len(data), 0)
 
-	if data[0].Version != "0.2.0" {
-		t.Fatalf("Wrong version was returned %s", data[0])
-	}
+	assert.Equal(t, string(data[0].Version), "0.2.0")
 }
 
 func TestProviderInvalidVerify(t *testing.T) {
@@ -44,11 +40,7 @@ func TestProviderInvalidVerify(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	data, err := pkv.VerifyProvider(ctx, addr)
-	if err != nil {
-		t.Fatalf("Failed to verify provider: %v", err)
-	}
+	require.NoError(t, err)
 
-	if len(data) != 0 {
-		t.Fatalf("Data size should be 0, instead is: %d", len(data))
-	}
+	assert.Equal(t, len(data), 0)
 }

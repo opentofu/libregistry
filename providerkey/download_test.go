@@ -4,9 +4,11 @@
 package providerkey
 
 import (
-	"bytes"
 	"context"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestProviderDownload(t *testing.T) {
@@ -18,19 +20,13 @@ func TestProviderDownload(t *testing.T) {
 	pubKey := getPubKey(t, key)
 	pkv, err := New(pubKey, nil, WithHTTPClient(httpClient))
 
-	if err != nil {
-		t.Fatalf("Failed to create provider key verifier: %v", err)
-	}
+	require.NoError(t, err)
 
 	ctx := context.Background()
 	data, err := pkv.(*providerKey).downloadFile(ctx, srv.URL)
 
-	if err != nil {
-		t.Fatalf("Failed to download file: %v", err)
-	}
+	require.NoError(t, err)
 
-	if !bytes.Equal(data, expectedData) {
-		t.Fatalf("Expected file data is: %s, got %s instead", expectedData, data)
-	}
+	assert.Equal(t, data, expectedData)
 
 }
