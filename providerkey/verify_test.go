@@ -14,8 +14,6 @@ import (
 )
 
 func TestProviderValidVerify(t *testing.T) {
-	t.Parallel()
-
 	pkv := setupProviderCall(t, "/SHASumsURL/", "/SHASumsSignatureURL/")
 	addr := provider.Addr{
 		Name:      "test",
@@ -33,8 +31,6 @@ func TestProviderValidVerify(t *testing.T) {
 }
 
 func TestProviderInvalidVerify(t *testing.T) {
-	t.Parallel()
-
 	pkv := setupProviderCall(t, "/invalid/", "/invalid/")
 	addr := provider.Addr{
 		Name:      "test",

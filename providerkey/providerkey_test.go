@@ -119,7 +119,9 @@ func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, resol
 	}, nil
 }
 
-func setupProviderCall(t *testing.T, shaSumsURL string, shaSumsSignatureURL string) ProviderKey {
+func setupProviderCall(t testing.TB, shaSumsURL string, shaSumsSignatureURL string) ProviderKey {
+	t.Helper()
+
 	key := generateKey(t)
 	pubKey := getPubKey(t, key)
 	srv := newTestServer(t, key, []byte("test"))

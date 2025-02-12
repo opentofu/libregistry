@@ -12,8 +12,6 @@ import (
 )
 
 func TestValidSignature(t *testing.T) {
-	t.Parallel()
-
 	key := generateKey(t)
 	pubKey := getPubKey(t, key)
 	signature, data := generateSignedData(t, key, []byte("test\n"))
@@ -27,8 +25,6 @@ func TestValidSignature(t *testing.T) {
 }
 
 func TestInvalidSignature(t *testing.T) {
-	t.Parallel()
-
 	key1 := generateKey(t)
 	signature, data := generateSignedData(t, key1, []byte("test\n"))
 
