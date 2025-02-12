@@ -35,7 +35,7 @@ func generateKey(t *testing.T) *crypto.Key {
 	return unlockedKey
 }
 
-// generateTestPubKey returns a PGP public key
+// getPubKey returns a PGP public key
 func getPubKey(t *testing.T, key *crypto.Key) string {
 	pubKey, err := key.GetArmoredPublicKey()
 	if err != nil {
@@ -62,9 +62,9 @@ func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []by
 	return pgpSignature.GetBinary(), plainMsg.GetBinary()
 }
 
-// generateTestServer is used to mock the HTTP requests and return the data
+// newTestServer is used to mock the HTTP requests and return the data
 // `/SHASumsURL/` and `/SHASumsSignatureURL/` are used to mimic the opentofu's registry API
-func generateTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptest.Server {
+func newTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptest.Server {
 	mux := http.NewServeMux()
 
 	sig, data := generateSignedData(t, key, []byte("message"))
