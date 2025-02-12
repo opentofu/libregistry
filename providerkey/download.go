@@ -11,7 +11,7 @@ import (
 )
 
 func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, error) {
-	req, err := http.NewRequestWithContext(ctx, "GET", url, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
