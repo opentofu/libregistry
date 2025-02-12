@@ -15,6 +15,8 @@ import (
 )
 
 func TestCloneRace(t *testing.T) {
+	t.Parallel()
+
 	const testParallelism = 10
 
 	const testOrg = "opentofu"
