@@ -11,6 +11,8 @@ import (
 )
 
 func TestProviderConfig(t *testing.T) {
+	t.Parallel()
+
 	key := generateKey(t)
 	pubKey := getPubKey(t, key)
 

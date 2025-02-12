@@ -12,6 +12,8 @@ import (
 )
 
 func TestProviderDownload(t *testing.T) {
+	t.Parallel()
+
 	expectedData := []byte("test")
 	key := generateKey(t)
 	srv := newTestServer(t, key, expectedData)
