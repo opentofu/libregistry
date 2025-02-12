@@ -7,6 +7,7 @@ package providerkey
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -34,10 +35,15 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKey, err
 	}
 
 	config := Config{}
+	var errs error
 	for _, opt := range options {
 		if err := opt(&config); err != nil {
-			return nil, err
+			errs = errors.Join(errs, err)
 		}
+	}
+
+	if errs != nil {
+		return nil, fmt.Errorf("failed to apply config options: %w", err)
 	}
 
 	err = config.ApplyDefaults(key)
