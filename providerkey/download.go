@@ -8,6 +8,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/opentofu/libregistry/internal/retry"
 )
 
 func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, error) {
@@ -16,7 +19,25 @@ func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, er
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
 	}
 
-	res, err := pk.config.HTTPClient.Do(req)
+	var res *http.Response
+	if err := retry.Func(
+		ctx,
+		fmt.Sprintf("retry file download: %s", url),
+		func() error {
+			res, err = pk.config.HTTPClient.Do(req)
+			return err
+		},
+		func(err error) bool {
+			// All errors returned by HTTPClient.Do will be subject to trying to download the file again
+			return true
+		},
+		3,
+		400*time.Millisecond,
+		pk.config.Logger,
+	); err != nil {
+		return nil, err
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("failed to download %s: %w", url, err)
 	}
