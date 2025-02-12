@@ -23,7 +23,7 @@ func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, er
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status code different from 200 %s: %w", url, err)
+		return nil, fmt.Errorf("status code different from %d %s: %w", http.StatusOK, url, err)
 	}
 
 	contents, err := io.ReadAll(res.Body)

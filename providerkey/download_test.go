@@ -14,7 +14,7 @@ import (
 func TestProviderDownload(t *testing.T) {
 	expectedData := []byte("test")
 	key := generateKey(t)
-	srv := generateTestServer(t, key, expectedData)
+	srv := newTestServer(t, key, expectedData)
 	httpClient := srv.Client()
 
 	pubKey := getPubKey(t, key)
