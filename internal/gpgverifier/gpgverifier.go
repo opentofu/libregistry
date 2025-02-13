@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpgvalidator
+package gpgverifier
 
 import (
 	"context"
@@ -11,20 +11,20 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-// GPGValidator validates if the data was signed by the binary signature.
+// GPGVerifier validates if the data was signed by the binary signature.
 // data comes from the *_SHA256SUMS file and signature from _SHA256SUMS.sig file from the provider.
-type GPGValidator interface {
-	// ValidateSignature validates if the signature was used to sign the data.
+type GPGVerifier interface {
+	// VerifySignature validates if the signature was used to sign the data.
 	// The keyring used is initialized on New.
-	ValidateSignature(ctx context.Context, data []byte, signature []byte) error
+	VerifySignature(ctx context.Context, data []byte, signature []byte) error
 }
 
-type gpgValidator struct {
+type gpgVerifier struct {
 	keyring *crypto.KeyRing
 	config  Config
 }
 
-func New(key *crypto.Key, options ...Opt) (GPGValidator, error) {
+func New(key *crypto.Key, options ...Opt) (GPGVerifier, error) {
 	signingKeyRing, err := crypto.NewKeyRing(key)
 	if err != nil {
 		return nil, fmt.Errorf("could not build GPG verifier: %w", err)
@@ -47,7 +47,7 @@ func New(key *crypto.Key, options ...Opt) (GPGValidator, error) {
 		return nil, fmt.Errorf("failed to apply defaults: %w", err)
 	}
 
-	return &gpgValidator{
+	return &gpgVerifier{
 		keyring: signingKeyRing,
 		config:  config,
 	}, nil

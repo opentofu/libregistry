@@ -11,7 +11,7 @@ import (
 	"fmt"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/opentofu/libregistry/internal/gpgvalidator"
+	"github.com/opentofu/libregistry/internal/gpgverifier"
 	"github.com/opentofu/libregistry/metadata"
 	"github.com/opentofu/libregistry/types/provider"
 )
@@ -32,7 +32,7 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKeyVerif
 		return nil, fmt.Errorf("could not parse armored key: %w", err)
 	}
 
-	gpgValidator, err := gpgvalidator.New(key)
+	gpgVerifier, err := gpgverifier.New(key)
 
 	config := Config{}
 	var errs error
@@ -52,16 +52,16 @@ func New(keyData string, dataAPI metadata.API, options ...Opt) (ProviderKeyVerif
 	}
 
 	return &providerKeyVerifier{
-		key:          key,
-		gpgValidator: gpgValidator,
-		config:       config,
-		dataAPI:      dataAPI,
+		key:         key,
+		gpgVerifier: gpgVerifier,
+		config:      config,
+		dataAPI:     dataAPI,
 	}, nil
 }
 
 type providerKeyVerifier struct {
-	config       Config
-	gpgValidator gpgvalidator.GPGValidator
-	key          *crypto.Key
-	dataAPI      metadata.API
+	config      Config
+	gpgVerifier gpgverifier.GPGVerifier
+	key         *crypto.Key
+	dataAPI     metadata.API
 }

@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpgvalidator
+package gpgverifier
 
 import (
 	"context"
@@ -19,7 +19,7 @@ func TestValidSignature(t *testing.T) {
 	pk, err := New(key)
 	require.NoError(t, err)
 
-	err = pk.ValidateSignature(context.Background(), signature, data)
+	err = pk.VerifySignature(context.Background(), signature, data)
 	require.NoError(t, err)
 }
 
@@ -33,6 +33,6 @@ func TestInvalidSignature(t *testing.T) {
 	pk, err := New(key2)
 	require.NoError(t, err)
 
-	err = pk.ValidateSignature(context.Background(), signature, data)
+	err = pk.VerifySignature(context.Background(), signature, data)
 	require.Error(t, err)
 }

@@ -81,7 +81,7 @@ func (pk *providerKeyVerifier) validate(ctx context.Context, pAddr provider.Addr
 		return fmt.Errorf("failed to download SHASums signature URL for provider: %w", err)
 	}
 
-	if err := pk.gpgValidator.ValidateSignature(ctx, signature, shaSumContents); err != nil {
+	if err := pk.gpgVerifier.VerifySignature(ctx, signature, shaSumContents); err != nil {
 		return &validationError{
 			message: fmt.Errorf("failed to validate signature for provider: %w", err),
 		}

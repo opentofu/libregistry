@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package gpgvalidator
+package gpgverifier
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-func (gv *gpgValidator) ValidateSignature(ctx context.Context, signature, data []byte) error {
+func (gv *gpgVerifier) VerifySignature(ctx context.Context, signature, data []byte) error {
 	plainMessage := crypto.NewPlainMessage(data)
 	pgpSignature := crypto.NewPGPSignature(signature)
 
