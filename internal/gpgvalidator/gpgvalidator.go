@@ -1,3 +1,6 @@
+// Copyright (c) The OpenTofu Authors
+// SPDX-License-Identifier: MPL-2.0
+
 package gpgvalidator
 
 import (
@@ -8,7 +11,8 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
-// GPGValidator v
+// GPGValidator validates if the data was signed by the binary signature.
+// data comes from the *_SHA256SUMS file and signature from _SHA256SUMS.sig file from the provider.
 type GPGValidator interface {
 	// ValidateSignature validates if the signature was used to sign the data.
 	// The keyring used is initialized on New.
