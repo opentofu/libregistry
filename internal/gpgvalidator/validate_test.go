@@ -1,13 +1,12 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package gpgvalidator
 
 import (
 	"context"
 	"testing"
 
-	"github.com/opentofu/libregistry/types/provider"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,14 +14,12 @@ func TestValidSignature(t *testing.T) {
 	t.Parallel()
 
 	key := generateKey(t)
-	pubKey := getPubKey(t, key)
 	signature, data := generateSignedData(t, key, []byte("test\n"))
 
-	pk, err := New(pubKey, nil)
+	pk, err := New(key)
 	require.NoError(t, err)
 
-	p := provider.Addr{Name: "test"}
-	err = pk.ValidateSignature(context.Background(), p, signature, data)
+	err = pk.ValidateSignature(context.Background(), signature, data)
 	require.NoError(t, err)
 }
 
@@ -33,11 +30,9 @@ func TestInvalidSignature(t *testing.T) {
 	signature, data := generateSignedData(t, key1, []byte("test\n"))
 
 	key2 := generateKey(t)
-	pubKey2 := getPubKey(t, key2)
-	pk, err := New(pubKey2, nil)
+	pk, err := New(key2)
 	require.NoError(t, err)
 
-	p := provider.Addr{Name: "test"}
-	err = pk.ValidateSignature(context.Background(), p, signature, data)
+	err = pk.ValidateSignature(context.Background(), signature, data)
 	require.Error(t, err)
 }

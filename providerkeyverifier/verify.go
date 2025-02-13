@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package providerkeyverifier
 
 import (
 	"context"
@@ -21,7 +21,7 @@ func (e *validationError) Error() string {
 	return fmt.Sprintf("%s", e.message)
 }
 
-func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) ([]provider.Version, error) {
+func (pk *providerKeyVerifier) VerifyProvider(ctx context.Context, pAddr provider.Addr) ([]provider.Version, error) {
 	pk.config.Logger.Info(ctx, "Verifying provider %s...", pAddr.Name)
 	providerData, err := pk.dataAPI.GetProvider(ctx, pAddr, false)
 	if err != nil {
@@ -43,7 +43,7 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) 
 			defer func() {
 				<-parallelismSemaphore
 			}()
-			if err := pk.check(ctx, pAddr, version); err != nil {
+			if err := pk.validate(ctx, pAddr, version); err != nil {
 				var vError *validationError
 				// If it isn't a validation error, like a network error, we return it and fail the function.
 				if !errors.As(err, &vError) {
@@ -69,7 +69,8 @@ func (pk *providerKey) VerifyProvider(ctx context.Context, pAddr provider.Addr) 
 }
 
 // check is used to download the version's signature and data and validates it with the keyring.
-func (pk *providerKey) check(ctx context.Context, p provider.Addr, version provider.Version) error {
+func (pk *providerKeyVerifier) validate(ctx context.Context, pAddr provider.Addr, version provider.Version) error {
+	pk.config.Logger.Info(ctx, "Validating signature with key %s for provider %s...", pk.key.GetHexKeyID(), pAddr.Name)
 	shaSumContents, err := pk.downloadFile(ctx, version.SHASumsURL)
 	if err != nil {
 		return fmt.Errorf("failed to download SHASums URL: %w", err)
@@ -80,7 +81,7 @@ func (pk *providerKey) check(ctx context.Context, p provider.Addr, version provi
 		return fmt.Errorf("failed to download SHASums signature URL for provider: %w", err)
 	}
 
-	if err := pk.ValidateSignature(ctx, p, signature, shaSumContents); err != nil {
+	if err := pk.gpgValidator.ValidateSignature(ctx, signature, shaSumContents); err != nil {
 		return &validationError{
 			message: fmt.Errorf("failed to validate signature for provider: %w", err),
 		}

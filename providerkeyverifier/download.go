@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package providerkeyverifier
 
 import (
 	"context"
@@ -13,7 +13,7 @@ import (
 	"github.com/opentofu/libregistry/internal/retry"
 )
 
-func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, error) {
+func (pkv *providerKeyVerifier) downloadFile(ctx context.Context, url string) ([]byte, error) {
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create HTTP request (%w)", err)
@@ -24,7 +24,7 @@ func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, er
 		ctx,
 		fmt.Sprintf("retry file download: %s", url),
 		func() error {
-			res, err = pk.config.HTTPClient.Do(req)
+			res, err = pkv.config.HTTPClient.Do(req)
 			return err
 		},
 		func(err error) bool {
@@ -33,7 +33,7 @@ func (pk *providerKey) downloadFile(ctx context.Context, url string) ([]byte, er
 		},
 		3,
 		400*time.Millisecond,
-		pk.config.Logger,
+		pkv.config.Logger,
 	); err != nil {
 		return nil, err
 	}

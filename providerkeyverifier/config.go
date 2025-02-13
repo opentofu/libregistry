@@ -1,11 +1,10 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package providerkeyverifier
 
 import (
 	"crypto/tls"
-	"fmt"
 	"net/http"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
@@ -23,9 +22,6 @@ type Config struct {
 	// HTTPClient holds the HTTP client to use for API requests. Note that this only affects API and RSS feed requests,
 	// but not git clone commands as those are done using the command line.
 	HTTPClient *http.Client
-	// Keyring is used to test the PGP key
-	KeyRing *crypto.KeyRing
-
 	// Number of versions that are going to be checked if they were signed
 	VersionsToCheck uint8 // default: 10
 	// Number of max parallelism used when checking the signatures for the versions
@@ -56,14 +52,6 @@ func (c *Config) ApplyDefaults(key *crypto.Key) error {
 
 	if c.VersionsToCheck == 0 {
 		c.VersionsToCheck = _versionsToCheck
-	}
-
-	if c.KeyRing == nil {
-		keyring, err := crypto.NewKeyRing(key)
-		if err != nil {
-			return fmt.Errorf("could not build keyring for key %s: %w", key.GetHexKeyID(), err)
-		}
-		c.KeyRing = keyring
 	}
 
 	return nil
@@ -97,14 +85,6 @@ func WithHTTPClient(httpClient *http.Client) Opt {
 func WithMaxParallelism(maxParallelism uint8) Opt {
 	return func(config *Config) error {
 		config.MaxParallelism = maxParallelism
-		return nil
-	}
-}
-
-// WithKeyring allows to define a PGP KeyRing
-func WithKeyring(keyring *crypto.KeyRing) Opt {
-	return func(config *Config) error {
-		config.KeyRing = keyring
 		return nil
 	}
 }

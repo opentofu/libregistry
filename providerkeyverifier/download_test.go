@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package providerkeyverifier
 
 import (
 	"context"
@@ -17,15 +17,11 @@ func TestProviderDownload(t *testing.T) {
 	expectedData := []byte("test")
 	key := generateKey(t)
 	srv := newTestServer(t, key, expectedData)
-	httpClient := srv.Client()
 
-	pubKey := getPubKey(t, key)
-	pkv, err := New(pubKey, nil, WithHTTPClient(httpClient))
-
-	require.NoError(t, err)
+	pkv := setupProviderCall(t, "/", "/")
 
 	ctx := context.Background()
-	data, err := pkv.(*providerKey).downloadFile(ctx, srv.URL)
+	data, err := pkv.(*providerKeyVerifier).downloadFile(ctx, srv.URL)
 
 	require.NoError(t, err)
 

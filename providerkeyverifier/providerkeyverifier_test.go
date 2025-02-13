@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerkey
+package providerkeyverifier
 
 import (
 	"context"
@@ -119,7 +119,7 @@ func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, resol
 	}, nil
 }
 
-func setupProviderCall(t testing.TB, shaSumsURL string, shaSumsSignatureURL string) ProviderKey {
+func setupProviderCall(t testing.TB, shaSumsURL string, shaSumsSignatureURL string) ProviderKeyVerifier {
 	t.Helper()
 
 	key := generateKey(t)
