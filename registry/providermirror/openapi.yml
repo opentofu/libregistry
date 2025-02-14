@@ -1,0 +1,76 @@
+definitions:
+    ListAvailableInstallationPackagesArchive:
+        properties:
+            hashes:
+                description: |-
+                    A list of hashes for the ZIP archive. Each hash takes the form of <type>:<hash>. The protocol
+                    supports two hash types:
+                    
+                    The h1: hash type is a hash of all files in the archive sorted by name and an SHA256 hash performed
+                    over them.
+                    
+                    The zh: hash type is a SHA256 hash of the ZIP file itself.
+                items:
+                    $ref: '#/definitions/ListAvailableInstallationPackagesHash'
+                type: array
+            url:
+                description: |-
+                    URL to a ZIP archive containing the installation package. This can be relative
+                    to the current URL.
+                type: string
+        required:
+            - url
+            - hashes
+        title: ListAvailableInstallationPackagesArchive is a single item in a ListAvailableInstallationPackagesResponse.
+        type: object
+    ListAvailableInstallationPackagesHash:
+        description: 'min length: 1'
+        title: ListAvailableInstallationPackagesHash is a single hash in an ListAvailableInstallationPackagesArchive.
+        type: string
+    ListAvailableInstallationPackagesResponse:
+        properties:
+            archives:
+                additionalProperties:
+                    $ref: '#/definitions/ListAvailableInstallationPackagesArchive'
+                description: A map of platform/architecture combinations to the details
+                type: object
+        type: object
+    ListAvailableVersionsResponse:
+        properties:
+            versions:
+                additionalProperties:
+                    $ref: '#/definitions/ListAvailableVersionsVersion'
+                type: object
+        required:
+            - versions
+        type: object
+    ListAvailableVersionsVersion:
+        type: object
+    RegistryHostname:
+        type: string
+    RegistryPackageTarget:
+        description: 'example: darwin_amd64'
+        title: |-
+            PackageTarget is a string that describes a platform and architecture combination, separated
+            by an underscore (_).
+        type: string
+    RegistryProviderArch:
+        type: string
+    RegistryProviderNamespace:
+        type: string
+    RegistryProviderOS:
+        type: string
+    RegistryProviderProtocolVersion:
+        type: string
+    RegistryProviderType:
+        type: string
+    RegistryProviderVersion:
+        type: string
+info:
+    description: API for OpenTofu provider mirror protocol
+    title: OpenTofu Provider Mirror API
+    version: 1.0.0
+paths: {}
+schemes:
+    - https
+swagger: "2.0"
