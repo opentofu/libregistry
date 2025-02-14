@@ -31,13 +31,13 @@ type Response struct {
 		// ---
 		// required: true
 		GrantTypes []string `json:"grant_types"`
-		// OAuth URL for the authorization endpoint.
+		// OAuth URL for the authorization hostname.
 		//
 		// ---
 		// required: true
 		// format: uri
 		AuthzURL string `json:"authz"`
-		// OAuth URL for the token endpoint.
+		// OAuth URL for the token hostname.
 		//
 		// ---
 		// required: true

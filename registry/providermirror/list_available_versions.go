@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providermirrorprotocol
+package providermirror
 
 import (
 	"github.com/opentofu/libregistry/registry/common"

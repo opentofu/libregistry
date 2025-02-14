@@ -5,6 +5,7 @@ package servicediscovery
 
 import (
 	"context"
+	"github.com/opentofu/libregistry/branding"
 	"net/http"
 
 	tofuhttp "github.com/opentofu/libregistry/registry/internal/http"
@@ -23,7 +24,7 @@ func NewClient(opts ...ClientOpt) (Client, error) {
 			return nil, err
 		}
 	}
-	cfg.applyDefaults()
+	cfg.applyDefaultsAndValidate()
 	return &client{
 		cfg,
 	}, nil
@@ -36,25 +37,39 @@ func WithHTTPClient(client *http.Client) ClientOpt {
 	}
 }
 
-func WithEndpoint(endpoint string) ClientOpt {
+func WithHostname(hostname string) ClientOpt {
 	return func(cfg *config) error {
-		cfg.endpoint = endpoint
+		cfg.hostname = hostname
+		return nil
+	}
+}
+
+func WithScheme(scheme string) ClientOpt {
+	return func(cfg *config) error {
+		cfg.scheme = scheme
 		return nil
 	}
 }
 
 type config struct {
-	endpoint string
+	scheme   string
+	hostname string
 	client   *http.Client
 }
 
-func (c *config) applyDefaults() {
+func (c *config) applyDefaultsAndValidate() error {
 	if c.client == nil {
 		c.client = http.DefaultClient
 	}
-	if c.endpoint == "" {
-		c.endpoint = "https://registry.opentofu.org"
+
+	if c.hostname == "" {
+		c.hostname = branding.DefaultRegistry
 	}
+
+	if c.scheme == "" {
+		c.scheme = branding.DefaultRegistryScheme
+	}
+	return nil
 }
 
 type client struct {
@@ -62,5 +77,5 @@ type client struct {
 }
 
 func (c client) ServiceDiscovery(ctx context.Context, _ Request) (Response, error) {
-	return tofuhttp.GetRequest[Response](ctx, c.cfg.client, c.cfg.endpoint, ".well-known/terraform.json")
+	return tofuhttp.GetRequest[Response](ctx, c.cfg.client, c.cfg.scheme+"://"+c.cfg.hostname, ".well-known/terraform.json")
 }

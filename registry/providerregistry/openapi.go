@@ -10,6 +10,6 @@
 //	BaseURL: https://registry.opentofu.org/v1/providers/
 //
 // swagger:meta
-package providerregistryprotocol
+package providerregistry
 
 //go:generate go run github.com/opentofu/libregistry/registry/internal/tools/generate-openapi github.com/opentofu/libregistry/registry/providerregistryprotocol

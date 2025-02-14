@@ -3,9 +3,13 @@ definitions:
         properties:
             hashes:
                 description: |-
-                    A list of hashes for the ZIP archive.
-
-                    TODO: describe the hash format.
+                    A list of hashes for the ZIP archive. Each hash takes the form of <type>:<hash>. The protocol
+                    supports two hash types:
+                    
+                    The h1: hash type is a hash of all files in the archive sorted by name and an SHA256 hash performed
+                    over them.
+                    
+                    The zh: hash type is a SHA256 hash of the ZIP file itself.
                 items:
                     $ref: '#/definitions/ListAvailableInstallationPackagesHash'
                 type: array

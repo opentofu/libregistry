@@ -10,6 +10,6 @@
 //	BaseURL: https://localhost/
 //
 // swagger:meta
-package providermirrorprotocol
+package providermirror
 
 //go:generate go run github.com/opentofu/libregistry/registry/internal/tools/generate-openapi github.com/opentofu/libregistry/registry/providermirrorprotocol

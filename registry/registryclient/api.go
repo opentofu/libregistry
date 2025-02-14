@@ -6,7 +6,7 @@ package registryclient
 import (
 	"context"
 
-	"github.com/opentofu/libregistry/registry/providerregistryprotocol"
+	"github.com/opentofu/libregistry/registry/providerregistry"
 )
 
 type Client interface {
@@ -14,5 +14,5 @@ type Client interface {
 }
 
 type DiscoveredClient interface {
-	providerregistryprotocol.Client
+	providerregistry.Client
 }

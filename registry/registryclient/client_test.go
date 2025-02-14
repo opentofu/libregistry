@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/opentofu/libregistry/registry/providerregistryprotocol"
+	"github.com/opentofu/libregistry/registry/providerregistry"
 	"github.com/opentofu/libregistry/registry/registryclient"
 )
 
@@ -23,7 +23,7 @@ func TestClient(t *testing.T) {
 		t.Fatalf("Service discovery failed (%v)", err)
 	}
 
-	awsResponse, err := registrycli.ListAvailableProviderVersions(ctx, providerregistryprotocol.ListAvailableProviderVersionsRequest{
+	awsResponse, err := registrycli.ListAvailableProviderVersions(ctx, providerregistry.ListAvailableProviderVersionsRequest{
 		Namespace: "opentofu",
 		Type:      "aws",
 	})
@@ -45,7 +45,7 @@ func TestClient(t *testing.T) {
 		t.Fatalf("No version 5.65.0 found.")
 	}
 
-	version, err := registrycli.GetProviderVersion(ctx, providerregistryprotocol.GetProviderVersionRequest{
+	version, err := registrycli.GetProviderVersion(ctx, providerregistry.GetProviderVersionRequest{
 		Namespace: "opentofu",
 		Type:      "aws",
 		Version:   "5.65.0",

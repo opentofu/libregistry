@@ -20,6 +20,6 @@ func TestSD(t *testing.T) {
 		t.Fatalf("Failed to perform service discovery (%v)", err)
 	}
 	if resp.ProvidersV1 != "/v1/providers/" {
-		t.Fatalf("Unexpected providers endpoint: %s", resp.ProvidersV1)
+		t.Fatalf("Unexpected providers hostname: %s", resp.ProvidersV1)
 	}
 }

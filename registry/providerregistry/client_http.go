@@ -1,10 +1,11 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providerregistryprotocol
+package providerregistry
 
 import (
 	"context"
+	"github.com/opentofu/libregistry/branding"
 	"net/http"
 	"net/url"
 
@@ -18,7 +19,7 @@ func NewClient(opts ...ClientOpt) (Client, error) {
 			return nil, err
 		}
 	}
-	cfg.applyDefaults()
+	cfg.applyDefaultsAndValidate()
 	return &client{
 		cfg,
 	}, nil
@@ -45,13 +46,14 @@ type config struct {
 	client            *http.Client
 }
 
-func (c *config) applyDefaults() {
+func (c *config) applyDefaultsAndValidate() error {
 	if c.client == nil {
 		c.client = http.DefaultClient
 	}
 	if c.providersEndpoint == "" {
-		c.providersEndpoint = "https://registry.opentofu.org/v1/providers"
+		c.providersEndpoint = branding.DefaultProvidersEndpoint
 	}
+	return nil
 }
 
 type client struct {

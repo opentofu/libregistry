@@ -1,7 +1,7 @@
 // Copyright (c) The OpenTofu Authors
 // SPDX-License-Identifier: MPL-2.0
 
-package providermirrorprotocol
+package providermirror
 
 import (
 	"github.com/opentofu/libregistry/registry/common"
@@ -29,9 +29,13 @@ type ListAvailableInstallationPackagesArchive struct {
 	//
 	// required: true
 	URL string `json:"url"`
-	// A list of hashes for the ZIP archive.
+	// A list of hashes for the ZIP archive. Each hash takes the form of <type>:<hash>. The protocol
+	// supports two hash types:
 	//
-	// TODO: describe the hash format.
+	// The h1: hash type is a hash of all files in the archive sorted by name and an SHA256 hash performed
+	// over them.
+	//
+	// The zh: hash type is a SHA256 hash of the ZIP file itself.
 	//
 	// required: true
 	Hashes []ListAvailableInstallationPackagesHash `json:"hashes"`

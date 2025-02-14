@@ -6,10 +6,11 @@ package registryclient
 import (
 	"context"
 	"fmt"
+	"github.com/opentofu/libregistry/branding"
 	"net/http"
 	"strings"
 
-	"github.com/opentofu/libregistry/registry/providerregistryprotocol"
+	"github.com/opentofu/libregistry/registry/providerregistry"
 	"github.com/opentofu/libregistry/registry/servicediscovery"
 )
 
@@ -22,7 +23,9 @@ func NewClient(opts ...ClientOpt) (Client, error) {
 			return nil, err
 		}
 	}
-	cfg.applyDefaults()
+	if err := cfg.applyDefaultsAndValidate(); err != nil {
+		return nil, err
+	}
 	return &client{
 		cfg,
 	}, nil
@@ -35,25 +38,40 @@ func WithHTTPClient(client *http.Client) ClientOpt {
 	}
 }
 
-func WithEndpoint(endpoint string) ClientOpt {
+func WithScheme(scheme string) ClientOpt {
 	return func(cfg *config) error {
-		cfg.endpoint = endpoint
+		if scheme != "http" && scheme != "https" {
+			return fmt.Errorf("invalid scheme: %s (must be https or http)", scheme)
+		}
+		cfg.scheme = scheme
+		return nil
+	}
+}
+
+func WithHostname(endpoint string) ClientOpt {
+	return func(cfg *config) error {
+		cfg.hostname = endpoint
 		return nil
 	}
 }
 
 type config struct {
-	endpoint string
+	scheme   string
+	hostname string
 	client   *http.Client
 }
 
-func (c *config) applyDefaults() {
+func (c *config) applyDefaultsAndValidate() error {
 	if c.client == nil {
 		c.client = http.DefaultClient
 	}
-	if c.endpoint == "" {
-		c.endpoint = "https://registry.opentofu.org"
+	if c.scheme == "" {
+		c.scheme = "https"
 	}
+	if c.hostname == "" {
+		c.hostname = branding.DefaultRegistry
+	}
+	return nil
 }
 
 type client struct {
@@ -62,7 +80,8 @@ type client struct {
 
 func (c client) ServiceDiscovery(ctx context.Context) (DiscoveredClient, error) {
 	sd, err := servicediscovery.NewClient(
-		servicediscovery.WithEndpoint(c.cfg.endpoint),
+		servicediscovery.WithScheme(c.cfg.scheme),
+		servicediscovery.WithHostname(c.cfg.hostname),
 		servicediscovery.WithHTTPClient(c.cfg.client),
 	)
 	if err != nil {
@@ -77,8 +96,15 @@ func (c client) ServiceDiscovery(ctx context.Context) (DiscoveredClient, error) 
 		return nil, fmt.Errorf("no providers endpoint found")
 	}
 
-	return providerregistryprotocol.NewClient(
-		providerregistryprotocol.WithHTTPClient(c.cfg.client),
-		providerregistryprotocol.WithProvidersEndpoint(strings.TrimSuffix(c.cfg.endpoint, "/")+resp.ProvidersV1),
+	var providersEndpoint string
+	if strings.HasPrefix(resp.ProvidersV1, "/") {
+		providersEndpoint = c.cfg.scheme + "://" + c.cfg.hostname + resp.ProvidersV1
+	} else {
+		providersEndpoint = resp.ProvidersV1
+	}
+
+	return providerregistry.NewClient(
+		providerregistry.WithHTTPClient(c.cfg.client),
+		providerregistry.WithProvidersEndpoint(providersEndpoint),
 	)
 }
