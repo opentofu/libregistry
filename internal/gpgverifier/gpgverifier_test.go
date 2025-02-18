@@ -10,7 +10,7 @@ import (
 	"github.com/ProtonMail/gopenpgp/v2/helper"
 )
 
-func generateKey(t testing.TB) *crypto.Key {
+func generateKey(t *testing.T) *crypto.Key {
 	t.Helper()
 	armoredKey, err := helper.GenerateKey("opentofu", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
@@ -31,7 +31,7 @@ func generateKey(t testing.TB) *crypto.Key {
 }
 
 // generate Signature and data
-func generateSignedData(t testing.TB, key *crypto.Key, msg []byte) ([]byte, []byte) {
+func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []byte) {
 	t.Helper()
 	var plainMsg = crypto.NewPlainMessage(msg)
 

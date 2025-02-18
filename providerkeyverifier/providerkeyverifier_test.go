@@ -16,7 +16,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func generateKey(t testing.TB) *crypto.Key {
+func generateKey(t *testing.T) *crypto.Key {
 	t.Helper()
 	armoredKey, err := helper.GenerateKey("opentofu", "test@opentofu.org", nil, "rsa", 1024)
 	if err != nil {
@@ -37,7 +37,7 @@ func generateKey(t testing.TB) *crypto.Key {
 }
 
 // getPubKey returns a PGP public key
-func getPubKey(t testing.TB, key *crypto.Key) string {
+func getPubKey(t *testing.T, key *crypto.Key) string {
 	t.Helper()
 	pubKey, err := key.GetArmoredPublicKey()
 	if err != nil {
@@ -48,7 +48,7 @@ func getPubKey(t testing.TB, key *crypto.Key) string {
 }
 
 // generate Signature and data
-func generateSignedData(t testing.TB, key *crypto.Key, msg []byte) ([]byte, []byte) {
+func generateSignedData(t *testing.T, key *crypto.Key, msg []byte) ([]byte, []byte) {
 	t.Helper()
 	var plainMsg = crypto.NewPlainMessage(msg)
 
@@ -67,7 +67,7 @@ func generateSignedData(t testing.TB, key *crypto.Key, msg []byte) ([]byte, []by
 
 // newTestServer is used to mock the HTTP requests and return the data
 // `/SHASumsURL/` and `/SHASumsSignatureURL/` are used to mimic the opentofu's registry API
-func newTestServer(t testing.TB, key *crypto.Key, expected []byte) *httptest.Server {
+func newTestServer(t *testing.T, key *crypto.Key, expected []byte) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 
@@ -119,7 +119,7 @@ func (m mockMetadata) GetProvider(ctx context.Context, addr provider.Addr, resol
 	}, nil
 }
 
-func setupProviderCall(t testing.TB, shaSumsURL string, shaSumsSignatureURL string) ProviderKeyVerifier {
+func setupProviderCall(t *testing.T, shaSumsURL string, shaSumsSignatureURL string) ProviderKeyVerifier {
 	t.Helper()
 
 	key := generateKey(t)
