@@ -19,7 +19,7 @@ func TestWriter(t *testing.T) {
 	const testMessage2 = "Hello world2"
 	const testMessage3 = "Hello world3"
 
-	wr := logger.NewWriter(ctx, log, logger.LevelDebug, "", "")
+	wr := logger.NewWriter(ctx, log, logger.LevelDebug, "")
 
 	if _, err := wr.Write([]byte(testMessage1)); err != nil {
 		t.Fatal(err)
