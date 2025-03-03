@@ -437,10 +437,10 @@ func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ..
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
 	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)
 	if stdout == nil {
-		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir, commandString+": ")
+		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir+"> "+commandString+": ")
 	}
 	cmd.Stdout = stdout
-	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir, commandString+": ")
+	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir+"> "+commandString+": ")
 	cmd.Dir = dir
 	cmd.Env = []string{"GIT_TERMINAL_PROMPT=0"}
 	done := make(chan struct{})
