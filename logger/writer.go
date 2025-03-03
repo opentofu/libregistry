@@ -20,11 +20,12 @@ const (
 )
 
 // NewWriter creates an io.WriteCloser that logs each line separately on the given log level, optionally with a prefix.
-func NewWriter(ctx context.Context, logger Logger, level Level, prefix string) io.WriteCloser {
+func NewWriter(ctx context.Context, logger Logger, level Level, dir, prefix string) io.WriteCloser {
 	return &writer{
 		ctx:    ctx,
 		logger: logger,
 		level:  level,
+		dir:    dir,
 		prefix: prefix,
 	}
 }
@@ -34,6 +35,7 @@ type writer struct {
 	logger Logger
 	buf    []byte
 	level  Level
+	dir    string
 	prefix string
 }
 
@@ -61,7 +63,7 @@ func (w *writer) writeLine(line string) {
 	if msgSuffix == "" {
 		return
 	}
-	msg := w.prefix + msgSuffix
+	msg := w.dir + w.prefix + msgSuffix
 	switch w.level {
 	case LevelTrace:
 		LogTrace(w.ctx, w.logger, "%s", msg)

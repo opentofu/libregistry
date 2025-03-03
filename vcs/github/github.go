@@ -418,7 +418,7 @@ func (w *workingCopy) listTags(ctx context.Context) ([]vcs.Version, error) {
 func (w *workingCopy) listRefs(ctx context.Context) (*bytes.Buffer, error) {
 	return retry.Func2(
 		ctx,
-		"git for-each-ref",
+		fmt.Sprintf("git for-each-ref: %s", w.dir),
 		func() (*bytes.Buffer, error) {
 			stdout := &bytes.Buffer{}
 			err := w.g.git(ctx, w.dir, stdout, "for-each-ref", "--format=%(refname:short)\t%(creatordate:format:%s)", "refs/tags/*")
@@ -437,10 +437,10 @@ func (g github) git(ctx context.Context, dir string, stdout io.Writer, params ..
 	commandString := strings.Join(append([]string{g.config.GitPath}, params...), " ")
 	logger.LogTrace(ctx, g.config.Logger, "Running "+commandString)
 	if stdout == nil {
-		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+		stdout = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir, commandString+": ")
 	}
 	cmd.Stdout = stdout
-	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, commandString+": ")
+	cmd.Stderr = logger.NewWriter(ctx, g.config.Logger, logger.LevelDebug, dir, commandString+": ")
 	cmd.Dir = dir
 	cmd.Env = []string{"GIT_TERMINAL_PROMPT=0"}
 	done := make(chan struct{})
